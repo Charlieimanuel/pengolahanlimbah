@@ -416,27 +416,34 @@ BEGIN
   SELECT id INTO v_unit_kimia_id FROM public.units WHERE nama_unit = 'Lab Kimia Terapan & Uji Bahan' LIMIT 1;
 
   -- 8.1 AKUN ADMIN UTAMA K3L: admin@polimdo.ac.id / AdminK3L2026!
-  INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
-    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
-  ) VALUES (
-    v_admin_id,
-    'admin@polimdo.ac.id',
-    crypt('AdminK3L2026!', gen_salt('bf')),
-    NOW(),
-    '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    'authenticated',
-    'authenticated',
-    '', '', '', ''
-  )
-  ON CONFLICT (email) DO UPDATE SET
-    encrypted_password = crypt('AdminK3L2026!', gen_salt('bf')),
-    email_confirmed_at = NOW(),
-    confirmation_token = '',
-    recovery_token = '',
-    email_change = '',
-    raw_user_meta_data = '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@polimdo.ac.id') THEN
+    UPDATE auth.users
+    SET 
+      encrypted_password = crypt('AdminK3L2026!', gen_salt('bf')),
+      email_confirmed_at = NOW(),
+      confirmation_token = '',
+      recovery_token = '',
+      email_change = '',
+      raw_user_meta_data = '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb
+    WHERE email = 'admin@polimdo.ac.id';
+
+    SELECT id INTO v_admin_id FROM auth.users WHERE email = 'admin@polimdo.ac.id';
+  ELSE
+    INSERT INTO auth.users (
+      id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+      aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
+    ) VALUES (
+      v_admin_id,
+      'admin@polimdo.ac.id',
+      crypt('AdminK3L2026!', gen_salt('bf')),
+      NOW(),
+      '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      'authenticated',
+      'authenticated',
+      '', '', '', ''
+    );
+  END IF;
 
   INSERT INTO public.profiles (
     id, email, nama_lengkap, nip_nim, role, nama_lab, jurusan, nomor_wa
@@ -452,31 +459,41 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE SET
     role = 'verifikator_k3l',
+    email = EXCLUDED.email,
     nama_lengkap = EXCLUDED.nama_lengkap,
-    nip_nim = EXCLUDED.nip_nim;
+    nip_nim = EXCLUDED.nip_nim,
+    nama_lab = EXCLUDED.nama_lab,
+    jurusan = EXCLUDED.jurusan;
 
   -- 8.2 AKUN ADMIN PENGELOLA TPS: admin_tps@polimdo.ac.id / AdminTPS2026!
-  INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
-    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
-  ) VALUES (
-    v_tps_id,
-    'admin_tps@polimdo.ac.id',
-    crypt('AdminTPS2026!', gen_salt('bf')),
-    NOW(),
-    '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    'authenticated',
-    'authenticated',
-    '', '', '', ''
-  )
-  ON CONFLICT (email) DO UPDATE SET
-    encrypted_password = crypt('AdminTPS2026!', gen_salt('bf')),
-    email_confirmed_at = NOW(),
-    confirmation_token = '',
-    recovery_token = '',
-    email_change = '',
-    raw_user_meta_data = '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin_tps@polimdo.ac.id') THEN
+    UPDATE auth.users
+    SET 
+      encrypted_password = crypt('AdminTPS2026!', gen_salt('bf')),
+      email_confirmed_at = NOW(),
+      confirmation_token = '',
+      recovery_token = '',
+      email_change = '',
+      raw_user_meta_data = '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb
+    WHERE email = 'admin_tps@polimdo.ac.id';
+
+    SELECT id INTO v_tps_id FROM auth.users WHERE email = 'admin_tps@polimdo.ac.id';
+  ELSE
+    INSERT INTO auth.users (
+      id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+      aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
+    ) VALUES (
+      v_tps_id,
+      'admin_tps@polimdo.ac.id',
+      crypt('AdminTPS2026!', gen_salt('bf')),
+      NOW(),
+      '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      'authenticated',
+      'authenticated',
+      '', '', '', ''
+    );
+  END IF;
 
   INSERT INTO public.profiles (
     id, email, nama_lengkap, nip_nim, role, nama_lab, jurusan, nomor_wa
@@ -492,31 +509,41 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE SET
     role = 'admin_tps',
+    email = EXCLUDED.email,
     nama_lengkap = EXCLUDED.nama_lengkap,
-    nip_nim = EXCLUDED.nip_nim;
+    nip_nim = EXCLUDED.nip_nim,
+    nama_lab = EXCLUDED.nama_lab,
+    jurusan = EXCLUDED.jurusan;
 
   -- 8.3 AKUN LABORAN PELAPOR: laboran@polimdo.ac.id / Pelapor2026!
-  INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
-    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
-  ) VALUES (
-    v_user_id,
-    'laboran@polimdo.ac.id',
-    crypt('Pelapor2026!', gen_salt('bf')),
-    NOW(),
-    '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    'authenticated',
-    'authenticated',
-    '', '', '', ''
-  )
-  ON CONFLICT (email) DO UPDATE SET
-    encrypted_password = crypt('Pelapor2026!', gen_salt('bf')),
-    email_confirmed_at = NOW(),
-    confirmation_token = '',
-    recovery_token = '',
-    email_change = '',
-    raw_user_meta_data = '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'laboran@polimdo.ac.id') THEN
+    UPDATE auth.users
+    SET 
+      encrypted_password = crypt('Pelapor2026!', gen_salt('bf')),
+      email_confirmed_at = NOW(),
+      confirmation_token = '',
+      recovery_token = '',
+      email_change = '',
+      raw_user_meta_data = '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb
+    WHERE email = 'laboran@polimdo.ac.id';
+
+    SELECT id INTO v_user_id FROM auth.users WHERE email = 'laboran@polimdo.ac.id';
+  ELSE
+    INSERT INTO auth.users (
+      id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+      aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
+    ) VALUES (
+      v_user_id,
+      'laboran@polimdo.ac.id',
+      crypt('Pelapor2026!', gen_salt('bf')),
+      NOW(),
+      '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      'authenticated',
+      'authenticated',
+      '', '', '', ''
+    );
+  END IF;
 
   INSERT INTO public.profiles (
     id, email, nama_lengkap, nip_nim, role, nama_lab, jurusan, unit_id, nomor_wa
@@ -533,8 +560,12 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE SET
     role = 'unit_pelapor',
+    email = EXCLUDED.email,
     nama_lengkap = EXCLUDED.nama_lengkap,
-    nip_nim = EXCLUDED.nip_nim;
+    nip_nim = EXCLUDED.nip_nim,
+    nama_lab = EXCLUDED.nama_lab,
+    jurusan = EXCLUDED.jurusan,
+    unit_id = EXCLUDED.unit_id;
 
   -- ----------------------------------------------------------------------------
   -- 8.4 SEED CONTOH TIKET PELAPORAN B3 (SIAP DISPLAY DI DASHBOARD)
