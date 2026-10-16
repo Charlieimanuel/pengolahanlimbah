@@ -116,6 +116,13 @@ export async function POST(request: Request) {
       }
     }
 
+    if (
+      targetEmail.toLowerCase() === "admin@polimdo.ac.id" ||
+      cleanIdentifier.toLowerCase() === "admin"
+    ) {
+      role = "verifikator_k3l";
+    }
+
     role = role || "unit_pelapor";
     const redirectUrl =
       role === "verifikator_k3l" || role === "admin_tps"

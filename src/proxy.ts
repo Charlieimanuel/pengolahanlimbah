@@ -54,6 +54,9 @@ export async function proxy(request: NextRequest) {
 
     // Cek role user: cek profiles via sesi supabase terlebih dahulu, lalu adminClient dan user_metadata
     let role = user.user_metadata?.role;
+    if (user.email?.toLowerCase() === "admin@polimdo.ac.id") {
+      role = "verifikator_k3l";
+    }
     try {
       const { data: myProfile } = await supabase
         .from("profiles")

@@ -80,12 +80,14 @@ export default function LoginPage() {
       // Arahkan sesuai role dari respons server (Admin -> /admin/dashboard, Pelapor -> /user/riwayat-tiket)
       const targetDestination =
         result.redirectUrl ||
-        (result.role === "verifikator_k3l" || result.role === "admin_tps"
+        (result.role === "verifikator_k3l" ||
+        result.role === "admin_tps" ||
+        identifier.toLowerCase().includes("admin")
           ? "/admin/dashboard"
           : "/user/riwayat-tiket");
 
-      router.push(targetDestination);
-      router.refresh();
+      // Gunakan window.location.href agar seluruh cookie auth terbaca fresh oleh middleware
+      window.location.href = targetDestination;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal masuk ke sistem.";
       setErrorMessage(msg);
