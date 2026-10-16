@@ -117,11 +117,7 @@ export default function TicketDetailModal({
   if (!ticketId) return null;
 
   const isFromDb = detail !== null;
-  const statusStr = isFromDb
-    ? detail.status
-    : ticketId === "#B3-2026-042"
-    ? "menunggu_verifikasi"
-    : "masuk_tps";
+  const statusStr = detail?.status || "menunggu_verifikasi";
 
   const isTps = statusStr === "masuk_tps";
   const isDispatched = statusStr === "diangkut_pihak3";
@@ -198,6 +194,24 @@ export default function TicketDetailModal({
           <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin text-[#284533]" />
             <span className="text-xs">Memuat detail dari database Supabase...</span>
+          </div>
+        ) : !detail ? (
+          <div className="py-12 px-4 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800 text-sm">Laporan Tidak Ditemukan</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                Anda tidak memiliki hak akses untuk melihat data laporan ini, atau tiket belum tersimpan di database.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-[#284533] text-white text-xs font-bold hover:bg-[#1f3627] transition cursor-pointer"
+            >
+              Tutup
+            </button>
           </div>
         ) : (
           <>

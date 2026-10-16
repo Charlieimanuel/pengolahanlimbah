@@ -305,11 +305,15 @@ CREATE POLICY "Semua user dapat melihat data unit"
   ON public.units FOR SELECT TO authenticated, anon
   USING (true);
 
--- 6.3 Policies Profiles (Non-recursive)
+-- 6.3 Policies Profiles (Strict Isolation: Hanya data profil sendiri, petugas verifikator, atau admin)
 DROP POLICY IF EXISTS "Isolasi Profil User" ON public.profiles;
 CREATE POLICY "Isolasi Profil User"
-  ON public.profiles FOR SELECT TO authenticated, anon
-  USING (true);
+  ON public.profiles FOR SELECT TO authenticated
+  USING (
+    id = auth.uid() 
+    OR role IN ('verifikator_k3l', 'admin_tps') 
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "User Update Profil Sendiri" ON public.profiles;
 CREATE POLICY "User Update Profil Sendiri"

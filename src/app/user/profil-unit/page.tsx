@@ -49,10 +49,19 @@ export default function ProfilUnitPage() {
             .from("profiles")
             .select("nama_lengkap, email, nip_nim, nama_lab, jurusan, role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
           if (data) {
             setDbProfile(data);
+          } else {
+            setDbProfile({
+              nama_lengkap: user.user_metadata?.full_name || "Pengguna Terdaftar",
+              email: user.email || "",
+              nip_nim: user.user_metadata?.id_number || "",
+              nama_lab: user.user_metadata?.lab || "Laboratorium Kampus",
+              jurusan: user.user_metadata?.jurusan || "Politeknik Negeri Manado",
+              role: user.user_metadata?.role || "unit_pelapor",
+            });
           }
         }
       } catch (err) {
@@ -63,11 +72,11 @@ export default function ProfilUnitPage() {
     loadProfile();
   }, []);
 
-  const displayName = dbProfile?.nama_lengkap || "Hendar Pandu, S.T, T.";
-  const displayNip = dbProfile?.nip_nim || "198703262010121004";
-  const displayLab = dbProfile?.nama_lab || "Lab Kimia Terpadu & Pengujian Lokasi (D4 TK)";
-  const displayJurusan = dbProfile?.jurusan || "D4 Teknik Kimia - Politeknik Negeri Manado";
-  const displayEmail = dbProfile?.email || "hendar.pandu@polimdo.ac.id";
+  const displayName = dbProfile?.nama_lengkap || "Pengguna Terdaftar";
+  const displayNip = dbProfile?.nip_nim || "-";
+  const displayLab = dbProfile?.nama_lab || "Unit Laboratorium / Praktikum Kampus";
+  const displayJurusan = dbProfile?.jurusan || "Politeknik Negeri Manado";
+  const displayEmail = dbProfile?.email || "-";
 
   const getInitials = (name: string) => {
     return name

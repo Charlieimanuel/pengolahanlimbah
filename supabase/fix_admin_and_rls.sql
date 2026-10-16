@@ -21,10 +21,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- 3. Terapkan Kebijakan RLS yang Bersih & Aman
+-- 3. Terapkan Kebijakan RLS yang Bersih & Aman (Isolasi Ketat Data Per User)
 CREATE POLICY "Isolasi Profil User"
-  ON public.profiles FOR SELECT TO authenticated, anon
-  USING (true);
+  ON public.profiles FOR SELECT TO authenticated
+  USING (
+    id = auth.uid() 
+    OR role IN ('verifikator_k3l', 'admin_tps') 
+    OR public.is_admin()
+  );
 
 CREATE POLICY "User Update Profil Sendiri"
   ON public.profiles FOR UPDATE TO authenticated

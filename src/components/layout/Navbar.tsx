@@ -33,6 +33,9 @@ export default function Navbar() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; nama_limbah: string; status: string; created_at: string }>
+  >([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +55,7 @@ export default function Navbar() {
             .from("profiles")
             .select("id, nama_lengkap, email, nip_nim, nama_lab, jurusan, role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
           if (data && !error) {
             setProfile(data);
@@ -67,6 +70,17 @@ export default function Navbar() {
             });
           }
 
+          // 2. Fetch notifikasi EKSKLUSIF tiket milik user ini
+          const { data: myTickets } = await supabase
+            .from("b3_tickets")
+            .select("id, nama_limbah, status, created_at")
+            .eq("pelapor_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(4);
+
+          if (myTickets) {
+            setNotifications(myTickets);
+          }
         }
       } catch (e) {
         console.error("Gagal memuat profil user dari database:", e);
@@ -182,7 +196,7 @@ export default function Navbar() {
 
                     <div className="flex items-center gap-1.5">
                       <span className="px-2 py-0.5 rounded-full bg-[#EAF2E5] text-[#3A6335] text-[10px] font-bold border border-[#A9C39B]">
-                        3 Baru
+                        {notifications.length} Info
                       </span>
                       <button
                         type="button"
@@ -195,85 +209,63 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Notification List */}
+                  {/* Notification List (Eksklusif Akun Pengguna) */}
                   <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
-                    {/* Item 1 */}
-                    <div className="p-2.5 rounded-xl bg-[#F8FAF4] border border-[#E5EBDD] hover:border-[#A9C39B] transition space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                          Tiket #B3-2026-042 Dalam Antrean
-                        </span>
-                        <span className="text-[10px] text-slate-400">10m lalu</span>
+                    {notifications.length === 0 ? (
+                      <div className="py-6 text-center text-slate-500 text-xs space-y-1">
+                        <p className="font-bold text-slate-700">Belum Ada Notifikasi</p>
+                        <p className="text-[11px] text-slate-400">
+                          Pembaruan status laporan limbah B3 Anda akan muncul di sini.
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Laporan limbah B3 Asam Sulfat sedang dalam antrean review teknis petugas K3L POLIMDO.
-                      </p>
-                      <div className="pt-1 flex items-center justify-between text-[10px]">
-                        <span className="text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
-                          Menunggu Verifikasi
-                        </span>
-                        <Link
-                          href="/user/riwayat-tiket"
-                          onClick={() => setShowNotifications(false)}
-                          className="text-[#3A6335] font-bold hover:underline"
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className="p-2.5 rounded-xl bg-[#F8FAF4] border border-[#E5EBDD] hover:border-[#A9C39B] transition space-y-1"
                         >
-                          Cek Status &rarr;
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Item 2 */}
-                    <div className="p-2.5 rounded-xl bg-[#F8FAF4] border border-[#E5EBDD] hover:border-[#A9C39B] transition space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#3A6335]"></span>
-                          Validasi Neraca Triwulan Selesai
-                        </span>
-                        <span className="text-[10px] text-slate-400">2j lalu</span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Volume limbah unit Lab Kimia Terpadu telah tervalidasi dan resmi tercatat di neraca kampus.
-                      </p>
-                      <div className="pt-1 flex items-center justify-between text-[10px]">
-                        <span className="text-[#3A6335] font-semibold bg-[#EAF2E5] px-2 py-0.5 rounded border border-[#A9C39B]">
-                          Tercatat Festronik
-                        </span>
-                        <Link
-                          href="/user/riwayat-tiket"
-                          onClick={() => setShowNotifications(false)}
-                          className="text-[#3A6335] font-bold hover:underline"
-                        >
-                          Lihat Log &rarr;
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Item 3 */}
-                    <div className="p-2.5 rounded-xl bg-[#F8FAF4] border border-[#E5EBDD] hover:border-[#A9C39B] transition space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                          Jadwal Penjemputan TPS Kampus
-                        </span>
-                        <span className="text-[10px] text-slate-400">1h lalu</span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Evakuasi limbah terjadwal oleh tim transporter berizin pada Jumat, 09.00 WITA.
-                      </p>
-                      <div className="pt-1 flex items-center justify-between text-[10px]">
-                        <span className="text-blue-800 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200/80">
-                          Jadwal TPS
-                        </span>
-                        <Link
-                          href="/user/panduan-sop"
-                          onClick={() => setShowNotifications(false)}
-                          className="text-[#3A6335] font-bold hover:underline"
-                        >
-                          Info Lokasi &rarr;
-                        </Link>
-                      </div>
-                    </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  n.status === "terverifikasi" || n.status === "masuk_tps"
+                                    ? "bg-[#3A6335]"
+                                    : "bg-amber-500 animate-pulse"
+                                }`}
+                              ></span>
+                              Tiket {n.id.startsWith("#") ? n.id : `#${n.id}`}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {n.created_at
+                                ? new Date(n.created_at).toLocaleDateString("id-ID", {
+                                    day: "numeric",
+                                    month: "short",
+                                  })
+                                : "Baru"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-snug">
+                            Laporan temuan limbah <strong>{n.nama_limbah}</strong>.
+                          </p>
+                          <div className="pt-1 flex items-center justify-between text-[10px]">
+                            <span className="text-[#3A6335] font-semibold bg-[#EAF2E5] px-2 py-0.5 rounded border border-[#A9C39B]">
+                              {n.status === "masuk_tps"
+                                ? "Masuk TPS POLIMDO"
+                                : n.status === "terverifikasi"
+                                ? "Terverifikasi K3L"
+                                : "Menunggu Verifikasi"}
+                            </span>
+                            <Link
+                              href="/user/riwayat-tiket"
+                              onClick={() => setShowNotifications(false)}
+                              className="text-[#3A6335] font-bold hover:underline"
+                            >
+                              Cek Status &rarr;
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   {/* Popup Footer */}

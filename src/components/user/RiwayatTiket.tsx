@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Search,
@@ -15,6 +16,7 @@ import {
   Truck,
   ShieldCheck,
   RefreshCw,
+  PlusCircle,
 } from "lucide-react";
 
 export interface TicketItem {
@@ -55,119 +57,62 @@ export default function RiwayatTiket({
     nip_nim: string | null;
   } | null>(null);
 
-  // Default initial demo tickets (fallback jika belum ada tiket di database)
-  const defaultTickets: TicketItem[] = [
-    {
-      id: "#B3-2026-042",
-      isEmergency: true,
-      tanggal: "30 Sep 2026, 09:15",
-      senyawa: "Asam Sulfat (H₂SO₄)",
-      kode: "B105d",
-      volume: "15 Liter",
-      bentuk: "Cair",
-      wadah: "Jerigen 20L",
-      lokasi: "Gedung Kuliah Terpadu, Lt. 1",
-      patokan: "Di bawah tangga darurat barat",
-      bahaya: [
-        { label: "Korosif", color: "bg-amber-50 text-amber-800 border-amber-200" },
-        { label: "Wadah Bocor", color: "bg-red-50 text-red-700 border-red-200 font-bold" },
-      ],
-      status: "Menunggu Verifikasi",
-      statusBadge: "bg-amber-50 text-amber-800 border-amber-200",
-      statusIcon: Clock,
-      catatan: "*Prioritas tinggi, tim tanggap darurat K3L sedang menuju lokasi.",
-      verifikator: "Ir. Meilany Sambouga",
-      actionType: "detail",
-    },
-    {
-      id: "#B3-2026-035",
-      isEmergency: false,
-      tanggal: "24 Sep 2026, 14:20",
-      senyawa: "Sisa Pelarut Aseton",
-      kode: "B109d",
-      volume: "10 Liter",
-      bentuk: "Cair",
-      wadah: "Jerigen Kaca",
-      lokasi: "Gedung Utama, Koridor Timur",
-      patokan: "Dekat toilet dosen",
-      bahaya: [
-        { label: "Flammable", color: "bg-amber-50 text-amber-800 border-amber-200" },
-        { label: "Wadah Baik", color: "bg-[#eaf4ed] text-[#244b32] border-[#cbe4d4]" },
-      ],
-      status: "Terverifikasi & Tercatat",
-      statusBadge: "bg-[#eaf4ed] text-[#244b32] border-[#cbe4d4]",
-      statusIcon: CheckCircle2,
-      catatan: "*Laporan tervalidasi & limbah telah dievakuasi ke TPS kampus.",
-      verifikator: "M. Risky Sambuaga",
-      actionType: "detail",
-    },
-    {
-      id: "#B3-2026-029",
-      isEmergency: false,
-      tanggal: "18 Sep 2026, 10:05",
-      senyawa: "Sludge Endapan Kimia Analisis",
-      kode: "B321-1",
-      volume: "8.0 Kg",
-      bentuk: "Lumpur / Padat",
-      wadah: "Drum Korosif Tertutup",
-      lokasi: "Depan Bengkel Mesin",
-      patokan: "Samping bak penampungan sementara",
-      bahaya: [
-        { label: "Beracun", color: "bg-red-50 text-red-800 border-red-200" },
-        { label: "Wadah Baik", color: "bg-[#eaf4ed] text-[#244b32] border-[#cbe4d4]" },
-      ],
-      status: "Terverifikasi & Tercatat",
-      statusBadge: "bg-[#eaf4ed] text-[#244b32] border-[#cbe4d4]",
-      statusIcon: CheckCircle2,
-      catatan: "*Laporan disetujui, kemasan terlabel piktogram resmi.",
-      verifikator: "Tim K3 Kampus",
-      actionType: "detail",
-    },
-  ];
-
   const onStatsLoadedRef = useRef(onStatsLoaded);
   useEffect(() => {
     onStatsLoadedRef.current = onStatsLoaded;
   }, [onStatsLoaded]);
 
-  // Fungsi pemanggil data dari Supabase
+  // Fungsi pemanggil data dari Supabase — KHUSUS TIKET MILIK USER TERSEBUT
   const fetchData = React.useCallback(async (showSpinner = false) => {
     try {
       if (showSpinner) setLoading(true);
       const supabase = createClient();
 
-        // Ambil profil login
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+      // Ambil user yang sedang aktif login
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("nama_lengkap, nip_nim")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (profile) {
-            setUserProfile(profile);
-          }
+      if (!user) {
+        setDbTickets([]);
+        if (onStatsLoadedRef.current) {
+          onStatsLoadedRef.current({
+            total: 0,
+            pending: 0,
+            verified: 0,
+            volumeSummary: "0 L / Kg",
+          });
         }
+        setLoading(false);
+        return;
+      }
 
-        // Ambil riwayat tiket dengan join verifikator K3L dan logbook TPS
-        const { data, error } = await supabase
-          .from("b3_tickets")
-          .select(`
-            *,
-            verifikator:verifikator_id(id, nama_lengkap, nip_nim, role),
-            tps_storage_logs(posisi_rak_tps, status_neraca, nama_transporter, nomor_festronik, tgl_masuk_tps, tgl_jatuh_tempo, tgl_pengeluaran)
-          `)
-          .order("created_at", { ascending: false });
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("nama_lengkap, nip_nim")
+        .eq("id", user.id)
+        .maybeSingle();
 
-        if (!error && data && data.length > 0) {
-          let totalVol = 0;
-          const mapped: TicketItem[] = data.map((item: any) => {
-            totalVol += Number(item.volume) || 0;
-            const isTps = item.status === "masuk_tps";
+      if (profile) {
+        setUserProfile(profile);
+      }
+
+      // Ambil riwayat tiket EKSKLUSIF hanya untuk user yang login (pelapor_id = user.id)
+      const { data, error } = await supabase
+        .from("b3_tickets")
+        .select(`
+          *,
+          verifikator:verifikator_id(id, nama_lengkap, nip_nim, role),
+          tps_storage_logs(posisi_rak_tps, status_neraca, nama_transporter, nomor_festronik, tgl_masuk_tps, tgl_jatuh_tempo, tgl_pengeluaran)
+        `)
+        .eq("pelapor_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        let totalVol = 0;
+        const mapped: TicketItem[] = data.map((item: any) => {
+          totalVol += Number(item.volume) || 0;
+          const isTps = item.status === "masuk_tps";
             const isDispatched = item.status === "diangkut_pihak3";
             const isVerified = item.status === "terverifikasi" || item.status === "selesai";
             const isDraft = item.status === "draft";
@@ -287,13 +232,14 @@ export default function RiwayatTiket({
             });
           }
         } else {
-          // Jika DB kosong, laporkan statistik default
+          // Jika DB kosong untuk user ini, laporkan statistik 0
+          setDbTickets([]);
           if (onStatsLoadedRef.current) {
             onStatsLoadedRef.current({
-              total: defaultTickets.length,
-              pending: defaultTickets.filter((t) => t.status === "Menunggu Verifikasi").length,
-              verified: defaultTickets.filter((t) => t.status === "Terverifikasi & Tercatat").length,
-              volumeSummary: "33 L Cairan • 8 kg Padatan",
+              total: 0,
+              pending: 0,
+              verified: 0,
+              volumeSummary: "0 L / Kg Tercatat",
             });
           }
         }
@@ -323,8 +269,8 @@ export default function RiwayatTiket({
     };
   }, [fetchData]);
 
-  // Jika tiket DB ada, gunakan tiket DB secara penuh
-  const allTickets = dbTickets.length > 0 ? dbTickets : defaultTickets;
+  // Hanya tiket riil milik akun user yang login
+  const allTickets = dbTickets;
 
   // Hitung jumlah dinamis tiap status
   const tabCounts = {
@@ -439,8 +385,23 @@ export default function RiwayatTiket({
       {/* ===================== MOBILE CARD LIST (< md) ===================== */}
       <div className="md:hidden space-y-3">
         {filteredTickets.length === 0 ? (
-          <div className="text-center text-slate-500 text-xs py-8">
-            Tidak ada laporan temuan yang cocok.
+          <div className="text-center py-10 px-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100/80 text-emerald-800 flex items-center justify-center mx-auto">
+              <FileText className="w-6 h-6 text-emerald-700" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-800 text-sm">Belum Ada Riwayat Laporan</p>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                Anda belum memiliki laporan limbah B3. Laporan yang Anda buat akan tercatat khusus pada akun Anda.
+              </p>
+            </div>
+            <Link
+              href="/user/laporan-baru"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#284533] text-white font-bold text-xs hover:bg-[#1f3627] transition shadow-xs"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Buat Laporan Baru</span>
+            </Link>
           </div>
         ) : (
           filteredTickets.map((t) => (
@@ -539,7 +500,29 @@ export default function RiwayatTiket({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf3ef]">
-            {filteredTickets.map((t) => (
+            {filteredTickets.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-14 text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-emerald-700" />
+                    </div>
+                    <p className="font-bold text-slate-800 text-sm">Belum Ada Riwayat Laporan Temuan</p>
+                    <p className="text-xs text-slate-500 max-w-sm">
+                      Anda belum memiliki laporan limbah B3 yang diajukan. Laporan yang Anda buat akan tercatat secara eksklusif pada akun Anda.
+                    </p>
+                    <Link
+                      href="/user/laporan-baru"
+                      className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#284533] text-white font-bold text-xs hover:bg-[#1f3627] transition shadow-xs"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Buat Laporan Temuan Sekarang</span>
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredTickets.map((t) => (
               <tr key={t.id} className="hover:bg-[#f9fbf9] transition">
                 {/* NO. LAPORAN */}
                 <td className="py-3 px-3.5 font-mono font-bold whitespace-nowrap">
@@ -606,7 +589,7 @@ export default function RiwayatTiket({
                   </button>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>
