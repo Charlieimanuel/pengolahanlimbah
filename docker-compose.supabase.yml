@@ -1,0 +1,161 @@
+# ==============================================================================
+# SELF-HOSTED SUPABASE DOCKER COMPOSE STACK (ON-PREMISE)
+# Sistem Pengelolaan Limbah B3 POLIMDO
+# ==============================================================================
+
+name: limbah-b3-supabase
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Supabase Studio (Web Dashboard GUI) - Akses via http://localhost:8001
+  # ----------------------------------------------------------------------------
+  studio:
+    container_name: supabase-studio
+    image: supabase/studio:latest
+    restart: unless-stopped
+    ports:
+      - "8001:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-PolimdoB3Password2026!}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM0NDk2MDB9.CRX1AODLdH_mzMuX_s_aR_I_J2n9b8_c1d_E3f5g7h8}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzQ0OTYwMH0.t4j4b-QdJ4o_X9u_Y1z_A2b3c4d5e6f7g8h9i0j1k2l}
+    depends_on:
+      meta:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 2. Kong API Gateway (Endpoint API Utama http://localhost:8000)
+  # ----------------------------------------------------------------------------
+  kong:
+    container_name: supabase-kong
+    image: kong:2.8.1-alpine
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./supabase/volumes/api/kong.yml:/var/lib/kong/kong.yml:ro
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 3. GoTrue / Supabase Auth (Manajemen User & Autentikasi)
+  # ----------------------------------------------------------------------------
+  auth:
+    container_name: supabase-auth
+    image: supabase/gotrue:v2.164.0
+    restart: unless-stopped
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${SUPABASE_PUBLIC_URL:-http://localhost:8000}/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-PolimdoB3Password2026!}@db:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: "*"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-limbah-b3-polimdo-2026-secure}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_DISABLE_SIGNUP: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 4. PostgREST (Auto-generated REST API dari PostgreSQL)
+  # ----------------------------------------------------------------------------
+  rest:
+    container_name: supabase-rest
+    image: postgrest/postgrest:v12.2.0
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-PolimdoB3Password2026!}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-limbah-b3-polimdo-2026-secure}
+      PGRST_DB_USE_BUILTIN_AUTH: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 5. Supabase Storage API (Foto Limbah & Berkas BAST)
+  # ----------------------------------------------------------------------------
+  storage:
+    container_name: supabase-storage
+    image: supabase/storage-api:v1.11.13
+    restart: unless-stopped
+    environment:
+      ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM0NDk2MDB9.CRX1AODLdH_mzMuX_s_aR_I_J2n9b8_c1d_E3f5g7h8}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzQ0OTYwMH0.t4j4b-QdJ4o_X9u_Y1z_A2b3c4d5e6f7g8h9i0j1k2l}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-limbah-b3-polimdo-2026-secure}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:-PolimdoB3Password2026!}@db:5432/postgres
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+    volumes:
+      - supabase_storage_data:/var/lib/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 6. Postgres-Meta (Helper Metadata Schema untuk Studio UI)
+  # ----------------------------------------------------------------------------
+  meta:
+    container_name: supabase-meta
+    image: supabase/postgres-meta:v0.84.2
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-PolimdoB3Password2026!}
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "8080" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 7. PostgreSQL Database (Engine Utama + ACID + Extensions)
+  # ----------------------------------------------------------------------------
+  db:
+    container_name: supabase-db
+    image: supabase/postgres:15.8.1.085
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-PolimdoB3Password2026!}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -h localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - supabase_db_data:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/init-limbah-b3.sql:ro
+
+volumes:
+  supabase_db_data:
+  supabase_storage_data:
