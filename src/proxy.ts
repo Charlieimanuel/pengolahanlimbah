@@ -2,13 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:8000";
+import { getValidServiceRoleKey } from "@/lib/supabase/admin";
+
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gspnacfzvpdivndcpled.supabase.co";
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE3OTE5NTQ4NTksImV4cCI6MjEwNzMxNDg1OX0.00JekA2LQ8cpErmaGHJ_VrLVjwQBEch_Hsv4uHO0hy8";
-const SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTc5MTk1NDg1OSwiZXhwIjoyMTA3MzE0ODU5fQ.WJVqbSOYuXiar0WSEiNXz8vHCx0gSw_eexZPUeXFLPY";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzcG5hY2Z6dnBkaXZuZGNwbGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMTM2NDEsImV4cCI6MjEwNzY4OTY0MX0.xqy-W8PG5i3Q3W8KQUQkjlO5kx3dC7UFW7RsRugizMI";
+const SERVICE_ROLE_KEY = getValidServiceRoleKey(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({

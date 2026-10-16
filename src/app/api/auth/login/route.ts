@@ -3,13 +3,13 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+import { getValidServiceRoleKey } from "@/lib/supabase/admin";
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gspnacfzvpdivndcpled.supabase.co";
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzcG5hY2Z6dnBkaXZuZGNwbGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMTM2NDEsImV4cCI6MjEwNzY4OTY0MX0.xqy-W8PG5i3Q3W8KQUQkjlO5kx3dC7UFW7RsRugizMI";
-const SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzcG5hY2Z6dnBkaXZuZGNwbGVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjExMzY0MSwiZXhwIjoyMTA3Njg5NjQxfQ.38DQWdToJyMJ2c8MemP3K9jJVe8Axt96sZL5QfCgIWk";
+const SERVICE_ROLE_KEY = getValidServiceRoleKey(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export async function POST(request: Request) {
   try {

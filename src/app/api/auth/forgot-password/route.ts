@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
+import { getValidServiceRoleKey } from "@/lib/supabase/admin";
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gspnacfzvpdivndcpled.supabase.co";
-const SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzcG5hY2Z6dnBkaXZuZGNwbGVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjExMzY0MSwiZXhwIjoyMTA3Njg5NjQxfQ.38DQWdToJyMJ2c8MemP3K9jJVe8Axt96sZL5QfCgIWk";
+const SERVICE_ROLE_KEY = getValidServiceRoleKey(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 function getEmailTemplate(otpCode: string, recipientName: string) {
   return `
