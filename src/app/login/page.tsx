@@ -81,11 +81,11 @@ export default function LoginPage() {
       const targetDestination =
         result.redirectUrl ||
         (result.role === "verifikator_k3l" ||
-        result.role === "admin_tps" ||
-        identifier.toLowerCase().includes("admin") ||
-        identifier.toLowerCase().includes("tps")
+          result.role === "admin_tps" ||
+          identifier.toLowerCase().includes("admin") ||
+          identifier.toLowerCase().includes("tps")
           ? "/admin/dashboard"
-          : "/user/riwayat-tiket");
+          : "/user/laporan-baru");
 
       // Gunakan window.location.href agar seluruh cookie auth terbaca fresh oleh middleware
       window.location.href = targetDestination;

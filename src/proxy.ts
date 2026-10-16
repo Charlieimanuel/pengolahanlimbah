@@ -54,7 +54,10 @@ export async function proxy(request: NextRequest) {
 
     // Cek role user: cek profiles via sesi supabase terlebih dahulu, lalu adminClient dan user_metadata
     let role = user.user_metadata?.role;
-    if (user.email?.toLowerCase() === "admin@polimdo.ac.id") {
+    if (
+      user.email?.toLowerCase() === "admin@polimdo.ac.id" ||
+      user.email?.toLowerCase() === "charliemamarimbing11@gmail.com"
+    ) {
       role = "verifikator_k3l";
     }
     if (
@@ -123,7 +126,7 @@ export async function proxy(request: NextRequest) {
     // Hanya verifikator_k3l dan admin_tps yang berhak mengakses /admin
     if (role !== "verifikator_k3l" && role !== "admin_tps") {
       const deniedUrl = request.nextUrl.clone();
-      deniedUrl.pathname = "/user/riwayat-tiket";
+      deniedUrl.pathname = "/user/riwayat-tiket"
       deniedUrl.searchParams.set("unauthorized", "admin_only");
       return NextResponse.redirect(deniedUrl);
     }

@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     const redirectUrl =
       role === "verifikator_k3l" || role === "admin_tps"
         ? "/admin/dashboard"
-        : "/user/riwayat-tiket";
+        : "/user/laporan-baru";
 
     const response = NextResponse.json({
       success: true,
