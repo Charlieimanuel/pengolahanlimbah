@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function formatIndonesianDate(dateStr: string | null) {
   if (!dateStr) return "-";
@@ -18,8 +19,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id")?.trim();
+    const isLatest = searchParams.get("latest") === "true";
 
-    if (!id) {
+    if (!id && !isLatest) {
       return NextResponse.json(
         { success: false, message: "Parameter nomor tiket wajib diisi" },
         { status: 400 }
@@ -28,8 +30,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Query ticket by exact id (case-insensitive)
-    const { data: ticket, error } = await supabase
+    let query = supabase
       .from("b3_tickets")
       .select(`
         id,
@@ -42,20 +43,51 @@ export async function GET(request: NextRequest) {
         lokasi_pengambilan,
         catatan_verifikasi,
         created_at,
-        verified_at
-      `)
-      .ilike("id", id)
-      .maybeSingle();
+        verified_at,
+        profiles:pelapor_id (
+          nama_lab,
+          jurusan
+        ),
+        units:unit_id (
+          nama_unit
+        )
+      `);
 
-    if (error) throw error;
+    let ticket: any = null;
+
+    if (id) {
+      const { data, error } = await query.ilike("id", id).maybeSingle();
+      if (error) throw error;
+      ticket = data;
+    } else {
+      // Ambil tiket terbaru yang bukan draft
+      const { data, error } = await query
+        .neq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      ticket = data;
+    }
 
     if (!ticket) {
       return NextResponse.json({
         success: false,
         found: false,
-        message: `Tiket dengan kode ${id} tidak ditemukan di sistem.`,
+        message: id
+          ? `Tiket dengan kode ${id} tidak ditemukan di sistem.`
+          : "Belum ada tiket limbah terdaftar di sistem.",
       });
     }
+
+    // Nama lab atau unit pelapor resmi
+    const unitName =
+      ticket.units?.nama_unit ||
+      (ticket.profiles?.nama_lab
+        ? `${ticket.profiles.nama_lab}${ticket.profiles.jurusan ? ` (${ticket.profiles.jurusan})` : ""}`
+        : null) ||
+      ticket.lokasi_pengambilan ||
+      "Unit POLIMDO";
 
     // Pemetaan status ke visual UI
     let stage = "Laporan Diterima";
@@ -102,18 +134,27 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    return NextResponse.json({
-      success: true,
-      found: true,
-      data: {
-        id: ticket.id,
-        stage,
-        stageColor,
-        desc: `${ticket.nama_limbah} (${ticket.lokasi_pengambilan || "Unit POLIMDO"}) • Vol: ${ticket.volume} ${ticket.satuan || "Liter"}`,
-        date: formatIndonesianDate(ticket.created_at),
-        statusNote,
+    return NextResponse.json(
+      {
+        success: true,
+        found: true,
+        data: {
+          id: ticket.id,
+          stage,
+          stageColor,
+          desc: `${ticket.nama_limbah} (${unitName}) • Vol: ${ticket.volume} ${ticket.satuan || "Liter"}`,
+          date: formatIndonesianDate(ticket.created_at),
+          statusNote,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error tracking ticket:", error);
     return NextResponse.json(

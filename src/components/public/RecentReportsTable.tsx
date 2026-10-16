@@ -29,20 +29,20 @@ export default function RecentReportsTable() {
 
   const [metrics, setMetrics] = useState<StatsMetrics>({
     totalTerinventarisasi: {
-      value: "61,5",
+      value: "0",
       unit: "Liter",
-      subtext: "100% Terkelola PP 22/2021 • Fase Cair",
+      subtext: "100% Terolah B3/KL • PP 22/2021",
     },
     kepatuhanUnit: {
-      value: "66,7%",
+      value: "100%",
       subtext: "Laboran & Dosen Terdaftar Aktif",
     },
     kapasitasTps: {
-      value: "5%",
-      subtext: "1 Drum Terisi (Batas Maks. 20 Drum)",
+      value: "0%",
+      subtext: "0 Drum Terisi (Batas Maks. 20 Drum)",
     },
     totalUnits: {
-      value: "21",
+      value: "30",
       subtext: "Unit Pelapor Aktif se-POLIMDO",
     },
   });
@@ -55,13 +55,19 @@ export default function RecentReportsTable() {
     async function loadStats() {
       try {
         setLoading(true);
-        const res = await fetch("/api/public/stats");
+        const res = await fetch(`/api/public/stats?t=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
         const json = await res.json();
         if (isMounted && json.success && json.data) {
           if (json.data.metrics) {
             setMetrics(json.data.metrics);
           }
-          if (Array.isArray(json.data.logs) && json.data.logs.length > 0) {
+          if (Array.isArray(json.data.logs)) {
             setReportsData(json.data.logs);
           }
         }

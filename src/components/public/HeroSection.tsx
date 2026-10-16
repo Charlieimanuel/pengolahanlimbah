@@ -17,13 +17,30 @@ export default function HeroSection() {
   const [ticketInput, setTicketInput] = useState("");
   const [loadingTrack, setLoadingTrack] = useState(false);
   const [activeTicket, setActiveTicket] = useState({
-    id: "B3-2026-035",
+    id: "B3-2026-001",
     stage: "Tersimpan di TPS",
     stageColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    desc: "Minyak Pelumas Bekas (Oli Mesin Bubut) (Bengkel Mesin POLIMDO) • Vol: 25 Liter",
-    date: "12 Oktober 2026",
-    statusNote: "Kemasan baik, telah dilakukan penimbangan presisi dan pelabelan piktogram B3 resmi."
+    desc: "oli (Lab Teknik Elektro) • Vol: 1 Liter",
+    date: "16 Oktober 2026",
+    statusNote: "Tersimpan aman di TPS B3 Kampus.",
   });
+
+  React.useEffect(() => {
+    async function loadLatestTicket() {
+      try {
+        const res = await fetch(`/api/public/track-ticket?latest=true&t=${Date.now()}`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        if (json.success && json.found && json.data) {
+          setActiveTicket(json.data);
+        }
+      } catch (err) {
+        console.error("Gagal memuat tiket terkini:", err);
+      }
+    }
+    loadLatestTicket();
+  }, []);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +60,7 @@ export default function HeroSection() {
           stageColor: "bg-slate-100 text-slate-700 border-slate-300",
           desc: json.message || "Nomor tiket tidak terdaftar pada basis data resmi SIM-LB3.",
           date: "-",
-          statusNote: "Pastikan format ID benar (contoh: B3-2026-035)"
+          statusNote: "Pastikan format ID benar (contoh: B3-2026-001)"
         });
       }
     } catch (err) {
@@ -182,7 +199,7 @@ export default function HeroSection() {
                     type="text"
                     value={ticketInput}
                     onChange={(e) => setTicketInput(e.target.value)}
-                    placeholder="Cari ID Tiket (contoh: B3-2026-035 / B3-2026-029)"
+                    placeholder="Cari ID Tiket (contoh: B3-2026-001)"
                     className="w-full text-xs bg-slate-50 border border-slate-200 rounded-full px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition"
                   />
                 </div>

@@ -298,7 +298,7 @@ export default function PublicNavbar() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari No. Tiket (contoh: B3-2026-035)"
+              placeholder="Cari No. Tiket (contoh: B3-2026-001)"
               className="w-full text-xs bg-slate-50 border border-slate-200 rounded-full pl-9 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </form>
