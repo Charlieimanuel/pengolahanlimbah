@@ -77,7 +77,14 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/user");
+      // Arahkan sesuai role dari respons server (Admin -> /admin/dashboard, Pelapor -> /user/riwayat-tiket)
+      const targetDestination =
+        result.redirectUrl ||
+        (result.role === "verifikator_k3l" || result.role === "admin_tps"
+          ? "/admin/dashboard"
+          : "/user/riwayat-tiket");
+
+      router.push(targetDestination);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal masuk ke sistem.";

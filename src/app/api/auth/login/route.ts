@@ -83,15 +83,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 401 });
     }
 
-    // Ambil role dari tabel profiles
-    const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("id, role, nama_lengkap")
-      .eq("id", data.user.id)
-      .maybeSingle();
+    // Ambil role dari tabel profiles (coba dari sesi pengguna terlebih dahulu, lalu adminClient dan metadata)
+    let role = data.user.user_metadata?.role;
+    try {
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("id, role, nama_lengkap")
+        .eq("id", data.user.id)
+        .maybeSingle();
 
-    const role = profile?.role || "unit_pelapor";
+      if (userProfile?.role) {
+        role = userProfile.role;
+      }
+    } catch {
+      // Abaikan jika gagal
+    }
+
+    if (!role) {
+      try {
+        const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("id, role, nama_lengkap")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profile?.role) {
+          role = profile.role;
+        }
+      } catch {
+        // Abaikan jika gagal
+      }
+    }
+
+    role = role || "unit_pelapor";
     const redirectUrl =
       role === "verifikator_k3l" || role === "admin_tps"
         ? "/admin/dashboard"

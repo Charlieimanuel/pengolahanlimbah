@@ -52,21 +52,36 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Cek role user: cek profiles via service role agar bebas RLS lag, lalu fallback ke user_metadata
+    // Cek role user: cek profiles via sesi supabase terlebih dahulu, lalu adminClient dan user_metadata
     let role = user.user_metadata?.role;
     try {
-      const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
-      const { data: profile } = await adminClient
+      const { data: myProfile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
-
-      if (profile?.role) {
-        role = profile.role;
+      if (myProfile?.role) {
+        role = myProfile.role;
       }
     } catch {
-      // Gunakan role dari metadata jika query gagal
+      // Abaikan jika gagal
+    }
+
+    if (!role) {
+      try {
+        const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile?.role) {
+          role = profile.role;
+        }
+      } catch {
+        // Gunakan role dari metadata jika query gagal
+      }
     }
 
     // Hanya verifikator_k3l dan admin_tps yang berhak mengakses /admin
