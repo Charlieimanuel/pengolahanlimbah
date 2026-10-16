@@ -57,6 +57,14 @@ export async function proxy(request: NextRequest) {
     if (user.email?.toLowerCase() === "admin@polimdo.ac.id") {
       role = "verifikator_k3l";
     }
+    if (
+      user.email?.toLowerCase().includes("admin_tps") ||
+      user.email?.toLowerCase().includes("admintps") ||
+      user.email?.toLowerCase().startsWith("tps@")
+    ) {
+      role = "admin_tps";
+    }
+
     try {
       const { data: myProfile } = await supabase
         .from("profiles")
@@ -68,6 +76,31 @@ export async function proxy(request: NextRequest) {
       }
     } catch {
       // Abaikan jika gagal
+    }
+
+    if (!role) {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          const authClient = createSupabaseAdmin(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: {
+              headers: {
+                Authorization: `Bearer ${sessionData.session.access_token}`,
+              },
+            },
+          });
+          const { data: myProfile } = await authClient
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (myProfile?.role) {
+            role = myProfile.role;
+          }
+        }
+      } catch {
+        // Abaikan jika gagal
+      }
     }
 
     if (!role) {

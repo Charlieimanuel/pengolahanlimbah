@@ -25,10 +25,16 @@ export async function POST(request: Request) {
     let cleanIdentifier = (identifier || "").trim();
     let targetEmail = cleanIdentifier;
 
-    // Jika input bukan format email (misal NIM/NIP atau keyword 'admin'), lookup email di profiles via admin client
+    // Jika input bukan format email (misal NIM/NIP atau keyword 'admin'/'admin_tps'), lookup email
     if (!targetEmail.includes("@")) {
       if (cleanIdentifier.toLowerCase() === "admin") {
         targetEmail = "admin@polimdo.ac.id";
+      } else if (
+        cleanIdentifier.toLowerCase() === "admin_tps" ||
+        cleanIdentifier.toLowerCase() === "admintps" ||
+        cleanIdentifier.toLowerCase() === "tps"
+      ) {
+        targetEmail = "admin_tps@polimdo.ac.id";
       } else {
         const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
         const { data: profileData, error: lookupError } = await adminClient
@@ -83,20 +89,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 401 });
     }
 
-    // Ambil role dari tabel profiles (coba dari sesi pengguna terlebih dahulu, lalu adminClient dan metadata)
+    // Ambil role dari tabel profiles menggunakan token sesi user yang baru login (aman dari isu RLS)
     let role = data.user.user_metadata?.role;
-    try {
-      const { data: userProfile } = await supabase
-        .from("profiles")
-        .select("id, role, nama_lengkap")
-        .eq("id", data.user.id)
-        .maybeSingle();
+    if (data.session?.access_token) {
+      try {
+        const authClient = createSupabaseAdmin(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: {
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+          },
+        });
+        const { data: userProfile } = await authClient
+          .from("profiles")
+          .select("id, role, nama_lengkap")
+          .eq("id", data.user.id)
+          .maybeSingle();
 
-      if (userProfile?.role) {
-        role = userProfile.role;
+        if (userProfile?.role) {
+          role = userProfile.role;
+        }
+      } catch {
+        // Abaikan jika gagal
       }
-    } catch {
-      // Abaikan jika gagal
     }
 
     if (!role) {
@@ -116,11 +131,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Penyesuaian khusus untuk akun Admin K3L dan Admin TPS
     if (
       targetEmail.toLowerCase() === "admin@polimdo.ac.id" ||
       cleanIdentifier.toLowerCase() === "admin"
     ) {
       role = "verifikator_k3l";
+    }
+
+    if (
+      targetEmail.toLowerCase().includes("admin_tps") ||
+      targetEmail.toLowerCase().includes("admintps") ||
+      cleanIdentifier.toLowerCase() === "admin_tps" ||
+      cleanIdentifier.toLowerCase() === "tps" ||
+      targetEmail.toLowerCase().startsWith("tps@")
+    ) {
+      if (role !== "verifikator_k3l") {
+        role = "admin_tps";
+      }
     }
 
     role = role || "unit_pelapor";
