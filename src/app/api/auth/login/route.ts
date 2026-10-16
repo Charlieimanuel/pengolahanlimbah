@@ -27,14 +27,20 @@ export async function POST(request: Request) {
 
     // Jika input bukan format email (misal NIM/NIP atau keyword 'admin'/'admin_tps'), lookup email
     if (!targetEmail.includes("@")) {
-      if (cleanIdentifier.toLowerCase() === "admin") {
+      if (
+        cleanIdentifier.toLowerCase() === "admin" ||
+        cleanIdentifier === "198501012010121001"
+      ) {
         targetEmail = "admin@polimdo.ac.id";
       } else if (
         cleanIdentifier.toLowerCase() === "admin_tps" ||
         cleanIdentifier.toLowerCase() === "admintps" ||
-        cleanIdentifier.toLowerCase() === "tps"
+        cleanIdentifier.toLowerCase() === "tps" ||
+        cleanIdentifier === "198803152015041002"
       ) {
         targetEmail = "admin_tps@polimdo.ac.id";
+      } else if (cleanIdentifier === "23024199") {
+        targetEmail = "charliemamarimbing11@gmail.com";
       } else {
         const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
         const { data: profileData, error: lookupError } = await adminClient

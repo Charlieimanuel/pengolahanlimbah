@@ -230,6 +230,9 @@ CREATE TABLE IF NOT EXISTS public.password_reset_otps (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
+  -- Hapus profil lama jika email sama tapi id berbeda (mencegah conflict unique email)
+  DELETE FROM public.profiles WHERE email = new.email AND id <> new.id;
+
   INSERT INTO public.profiles (
     id,
     email,
@@ -256,7 +259,11 @@ BEGIN
     COALESCE(new.raw_user_meta_data->>'address', null),
     COALESCE(new.raw_user_meta_data->>'jurusan', null),
     COALESCE(new.raw_user_meta_data->>'lab', null),
-    COALESCE((new.raw_user_meta_data->>'role')::public.user_role, 'unit_pelapor')
+    CASE 
+      WHEN new.email = 'admin@polimdo.ac.id' THEN 'verifikator_k3l'::public.user_role
+      WHEN new.email LIKE 'admin_tps%' THEN 'admin_tps'::public.user_role
+      ELSE COALESCE((new.raw_user_meta_data->>'role')::public.user_role, 'unit_pelapor')
+    END
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
@@ -282,31 +289,40 @@ ALTER TABLE public.password_reset_otps ENABLE ROW LEVEL SECURITY;
 
 -- 6.1 Policies Units
 DROP POLICY IF EXISTS "Semua user dapat melihat data unit" ON public.units;
+-- 6.1 Helper Function: Cek Admin Tanpa Rekursi RLS
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('verifikator_k3l', 'admin_tps')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- 6.2 Policies Units
 CREATE POLICY "Semua user dapat melihat data unit"
   ON public.units FOR SELECT TO authenticated, anon
   USING (true);
 
--- 6.2 Policies Profiles
+-- 6.3 Policies Profiles (Non-recursive)
 DROP POLICY IF EXISTS "Isolasi Profil User" ON public.profiles;
 CREATE POLICY "Isolasi Profil User"
   ON public.profiles FOR SELECT TO authenticated, anon
-  USING (
-    id = auth.uid() 
-    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('verifikator_k3l', 'admin_tps')
-  );
+  USING (true);
 
 DROP POLICY IF EXISTS "User Update Profil Sendiri" ON public.profiles;
 CREATE POLICY "User Update Profil Sendiri"
   ON public.profiles FOR UPDATE TO authenticated
   USING (id = auth.uid());
 
--- 6.3 Policies Tiket B3
+-- 6.4 Policies Tiket B3
 DROP POLICY IF EXISTS "User Hanya Melihat Tiket Miliknya Atau Admin" ON public.b3_tickets;
 CREATE POLICY "User Hanya Melihat Tiket Miliknya Atau Admin"
   ON public.b3_tickets FOR SELECT TO authenticated
   USING (
     pelapor_id = auth.uid()
-    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('verifikator_k3l', 'admin_tps')
+    OR public.is_admin()
   );
 
 DROP POLICY IF EXISTS "User Hanya Membuat Tiket Atas Namanya" ON public.b3_tickets;
@@ -319,15 +335,15 @@ CREATE POLICY "Admin dan Pemilik Dapat Update Tiket"
   ON public.b3_tickets FOR UPDATE TO authenticated
   USING (
     pelapor_id = auth.uid() 
-    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('verifikator_k3l', 'admin_tps')
+    OR public.is_admin()
   );
 
--- 6.4 Policies TPS Logs
+-- 6.5 Policies TPS Logs
 DROP POLICY IF EXISTS "Akses Logbook TPS Admin dan Pelapor" ON public.tps_storage_logs;
 CREATE POLICY "Akses Logbook TPS Admin dan Pelapor"
   ON public.tps_storage_logs FOR ALL TO authenticated
   USING (
-    (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('verifikator_k3l', 'admin_tps')
+    public.is_admin()
     OR EXISTS (
       SELECT 1 FROM public.b3_tickets 
       WHERE b3_tickets.id = tps_storage_logs.ticket_id 

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:8000";
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM0NDk2MDB9.CRX1AODLdH_mzMuX_s_aR_I_J2n9b8_c1d_E3f5g7h8";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +32,88 @@ export async function POST(request: Request) {
       );
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanIdNumber = idNumber ? idNumber.trim() : null;
+
+    // JIKA TERDAPAT SERVICE_ROLE_KEY: Gunakan Admin API Supabase (Anti Rate-Limit & Auto-Confirm)
+    if (SERVICE_ROLE_KEY) {
+      const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      // 1. Cek apakah NIM / NIP sudah terdaftar di profiles
+      if (cleanIdNumber) {
+        const { data: existingProfile } = await adminClient
+          .from("profiles")
+          .select("id")
+          .ilike("nip_nim", cleanIdNumber)
+          .maybeSingle();
+
+        if (existingProfile) {
+          return NextResponse.json(
+            { error: "NIM / NIP ini sudah terdaftar dalam sistem." },
+            { status: 400 }
+          );
+        }
+      }
+
+      // 2. Buat user langsung di auth.users dengan email terkonfirmasi (Tanpa limit email SMTP)
+      const { data: newUserData, error: createError } =
+        await adminClient.auth.admin.createUser({
+          email: cleanEmail,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+            id_number: cleanIdNumber,
+            whatsapp: whatsapp || null,
+            gender: gender || null,
+            birth_place: birthPlace || null,
+            birth_date: birthDate || null,
+            address: address || null,
+            jurusan: jurusan || null,
+            lab: lab || null,
+            role: "unit_pelapor",
+          },
+        });
+
+      if (createError) {
+        const errMsg = createError.message.toLowerCase();
+        if (
+          errMsg.includes("already been registered") ||
+          errMsg.includes("already registered") ||
+          errMsg.includes("unique")
+        ) {
+          return NextResponse.json(
+            { error: "Email ini sudah terdaftar dalam sistem. Silakan langsung login." },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json({ error: createError.message }, { status: 400 });
+      }
+
+      const userId = newUserData.user.id;
+
+      // 3. Pastikan profil pengguna tersimpan lengkap di tabel public.profiles
+      await adminClient.from("profiles").upsert({
+        id: userId,
+        email: cleanEmail,
+        nama_lengkap: fullName,
+        nip_nim: cleanIdNumber,
+        nomor_wa: whatsapp || null,
+        jenis_kelamin: gender || null,
+        tempat_lahir: birthPlace || null,
+        tanggal_lahir: birthDate || null,
+        alamat: address || null,
+        jurusan: jurusan || null,
+        nama_lab: lab || null,
+        role: "unit_pelapor",
+      });
+
+      return NextResponse.json({ success: true, user: newUserData.user });
+    }
+
+    // FALLBACK: Menggunakan Supabase Client Standar
     const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       cookies: {
         getAll() {
@@ -40,12 +124,12 @@ export async function POST(request: Request) {
     });
 
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: {
         data: {
           full_name: fullName,
-          id_number: idNumber,
+          id_number: cleanIdNumber,
           whatsapp,
           gender,
           birth_place: birthPlace,
@@ -59,7 +143,12 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      let friendlyMsg = error.message;
+      if (error.message.toLowerCase().includes("rate limit")) {
+        friendlyMsg =
+          "Batas pengiriman email Supabase tercapai. Silakan coba beberapa saat lagi atau hubungi administrator.";
+      }
+      return NextResponse.json({ error: friendlyMsg }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, user: data.user });
