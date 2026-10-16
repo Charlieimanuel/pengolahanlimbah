@@ -419,7 +419,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@polimdo.ac.id') THEN
     UPDATE auth.users
     SET 
-      encrypted_password = crypt('AdminK3L2026!', gen_salt('bf')),
+      encrypted_password = crypt('AdminK3L2026!', gen_salt('bf', 10)),
       email_confirmed_at = NOW(),
       confirmation_token = '',
       recovery_token = '',
@@ -435,7 +435,7 @@ BEGIN
     ) VALUES (
       v_admin_id,
       'admin@polimdo.ac.id',
-      crypt('AdminK3L2026!', gen_salt('bf')),
+      crypt('AdminK3L2026!', gen_salt('bf', 10)),
       NOW(),
       '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb,
       '{"provider":"email","providers":["email"]}'::jsonb,
@@ -469,7 +469,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin_tps@polimdo.ac.id') THEN
     UPDATE auth.users
     SET 
-      encrypted_password = crypt('AdminTPS2026!', gen_salt('bf')),
+      encrypted_password = crypt('AdminTPS2026!', gen_salt('bf', 10)),
       email_confirmed_at = NOW(),
       confirmation_token = '',
       recovery_token = '',
@@ -485,7 +485,7 @@ BEGIN
     ) VALUES (
       v_tps_id,
       'admin_tps@polimdo.ac.id',
-      crypt('AdminTPS2026!', gen_salt('bf')),
+      crypt('AdminTPS2026!', gen_salt('bf', 10)),
       NOW(),
       '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb,
       '{"provider":"email","providers":["email"]}'::jsonb,
@@ -519,7 +519,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM auth.users WHERE email = 'laboran@polimdo.ac.id') THEN
     UPDATE auth.users
     SET 
-      encrypted_password = crypt('Pelapor2026!', gen_salt('bf')),
+      encrypted_password = crypt('Pelapor2026!', gen_salt('bf', 10)),
       email_confirmed_at = NOW(),
       confirmation_token = '',
       recovery_token = '',
@@ -535,7 +535,7 @@ BEGIN
     ) VALUES (
       v_user_id,
       'laboran@polimdo.ac.id',
-      crypt('Pelapor2026!', gen_salt('bf')),
+      crypt('Pelapor2026!', gen_salt('bf', 10)),
       NOW(),
       '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb,
       '{"provider":"email","providers":["email"]}'::jsonb,
