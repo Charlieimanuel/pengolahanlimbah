@@ -54,7 +54,10 @@ export async function proxy(request: NextRequest) {
 
     // Cek role user: cek profiles via sesi supabase terlebih dahulu, lalu adminClient dan user_metadata
     let role = user.user_metadata?.role;
-    if (user.email?.toLowerCase() === "admin@polimdo.ac.id") {
+    if (
+      user.email?.toLowerCase() === "admin@polimdo.ac.id" ||
+      user.email?.toLowerCase() === "charliemamarimbing11@gmail.com"
+    ) {
       role = "verifikator_k3l";
     }
     if (

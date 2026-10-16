@@ -134,6 +134,7 @@ export async function POST(request: Request) {
     // Penyesuaian khusus untuk akun Admin K3L dan Admin TPS
     if (
       targetEmail.toLowerCase() === "admin@polimdo.ac.id" ||
+      targetEmail.toLowerCase() === "charliemamarimbing11@gmail.com" ||
       cleanIdentifier.toLowerCase() === "admin"
     ) {
       role = "verifikator_k3l";

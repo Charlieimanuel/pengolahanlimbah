@@ -83,7 +83,8 @@ export default function LoginPage() {
         (result.role === "verifikator_k3l" ||
         result.role === "admin_tps" ||
         identifier.toLowerCase().includes("admin") ||
-        identifier.toLowerCase().includes("tps")
+        identifier.toLowerCase().includes("tps") ||
+        identifier.toLowerCase().includes("charlie")
           ? "/admin/dashboard"
           : "/user/riwayat-tiket");
 
