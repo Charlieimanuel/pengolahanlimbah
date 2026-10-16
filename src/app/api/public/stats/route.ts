@@ -86,9 +86,9 @@ export async function GET() {
 
     const allTickets = (tickets || []) as any[];
 
-    // Tiket yang valid dalam neraca inventaris (diajukan, terverifikasi, masuk_tps, diangkut_pihak3, selesai)
+    // Tiket yang valid dalam neraca inventaris (menunggu_verifikasi, diajukan, terverifikasi, masuk_tps, diangkut_pihak3, selesai)
     const validTickets = allTickets.filter((t) =>
-      ["diajukan", "terverifikasi", "masuk_tps", "diangkut_pihak3", "selesai"].includes(t.status)
+      ["menunggu_verifikasi", "diajukan", "terverifikasi", "masuk_tps", "diangkut_pihak3", "selesai"].includes(t.status)
     );
 
     // Kalkulasi volume neraca
@@ -166,7 +166,7 @@ export async function GET() {
       const isStored =
         t.status === "masuk_tps" || tpsLog?.status_neraca === "tersimpan";
       const isVerified = t.status === "terverifikasi";
-      const isSubmitted = t.status === "diajukan";
+      const isSubmitted = t.status === "diajukan" || t.status === "menunggu_verifikasi";
 
       let statusDisplay = "Tersimpan Aman";
       let statusBadge = "bg-emerald-50 text-[#064e3b] border-emerald-200";
