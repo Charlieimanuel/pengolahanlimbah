@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
-  HelpCircle,
   Shield,
   User,
 } from "lucide-react";
@@ -25,15 +24,15 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showForgotModal, setShowForgotModal] = useState(false);
 
   // State untuk Smooth Dissolve Transition & Interactive Astra 3D Tilt
   const [isLeaving, setIsLeaving] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  // Prefetch halaman daftar agar langsung terganti tanpa jeda
+  // Prefetch halaman daftar dan lupa-sandi agar langsung terganti tanpa jeda
   useEffect(() => {
     router.prefetch("/daftar");
+    router.prefetch("/lupa-sandi");
   }, [router]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -645,13 +644,13 @@ export default function LoginPage() {
                 <span className="text-[11px] sm:text-xs">Ingat Sesi Saya</span>
               </label>
 
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(true)}
+              <Link
+                href="/lupa-sandi"
+                onClick={(e) => handleSmoothNavigate(e, "/lupa-sandi")}
                 className="text-[11px] sm:text-xs text-slate-800 hover:text-emerald-800 font-semibold transition"
               >
                 Lupa Kata Sandi?
-              </button>
+              </Link>
             </div>
 
             {/* Error Alert */}
@@ -720,46 +719,6 @@ export default function LoginPage() {
           Copyright © 2026 Politeknik Negeri Manado · UPT K3L
         </div>
       </div>
-
-      {/* Forgot Password Modal */}
-      {showForgotModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-3.5 shadow-xl animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
-                <HelpCircle className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900">
-                  Reset Kata Sandi Akun SIM-LB3
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Layanan Bantuan Resmi Sivitas Akademika POLIMDO
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Untuk melakukan pemulihan kata sandi akun laboran atau SSO POLIMDO, silakan hubungi tim UPT K3 Kampus atau IT Puskom POLIMDO dengan membawa identitas NIP/NIDN/KTM.
-            </p>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-1">
-              <div className="font-semibold text-slate-700">Kontak Helpdesk K3 Kampus:</div>
-              <div className="text-slate-600 text-[11px]">Email: k3@polimdo.ac.id / puskom@polimdo.ac.id</div>
-              <div className="text-slate-600 text-[11px]">Hotline K3: (0431) 811-911</div>
-            </div>
-
-            <div className="pt-1 flex justify-end">
-              <button
-                onClick={() => setShowForgotModal(false)}
-                className="bg-[#064e3b] hover:bg-[#043d2e] text-white text-xs font-bold px-4 py-2 rounded-xl transition"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
