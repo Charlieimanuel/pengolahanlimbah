@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- SISTEM INFORMASI MANAJEMEN PENGELOLAAN LIMBAH B3 (SIM-LB3) POLIMDO
--- SKEMA LENGKAP POSTGRESQL / DOCKER SUPABASE DENGAN MASTER DATA & SEED AKUN
+-- SKEMA LENGKAP UNIVERSAL POSTGRESQL (SUPABASE CLOUD / DOCKER ON-PREMISE)
 -- STANDAR PP NO. 22 TAHUN 2021 & PERMEN LHK
 -- ==============================================================================
 
@@ -11,87 +11,102 @@ CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE SCHEMA IF NOT EXISTS public;
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
-
--- Roles bawaan Supabase / PostgREST (Aman dijalankan di Postgres Docker)
 DO $$ BEGIN
-  CREATE ROLE anon NOLOGIN;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
+  CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+  CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 DO $$ BEGIN
-  CREATE ROLE authenticated NOLOGIN;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
+  CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+  CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+EXCEPTION WHEN OTHERS THEN null; END $$;
+
+-- Roles bawaan (Hanya dibuat jika belum ada di Docker, di-skip aman di Supabase Cloud)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN;
+  END IF;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 DO $$ BEGIN
-  CREATE ROLE service_role NOLOGIN;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN;
+  END IF;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 DO $$ BEGIN
-  CREATE ROLE supabase_admin LOGIN SUPERUSER;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN;
+  END IF;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
-GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
-GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
+DO $$ BEGIN
+  GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+  GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 -- ------------------------------------------------------------------------------
--- 2. SETUP AUTH FUNCTIONS & AUTH.USERS TABLE (KHUSUS DOCKER / SELF-HOSTED)
+-- 2. SETUP AUTH FUNCTIONS & AUTH.USERS TABLE (AMAN UNTUK CLOUD MAUPUN DOCKER)
 -- ------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS auth.users (
-  instance_id uuid NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  aud varchar(255) NULL DEFAULT 'authenticated',
-  role varchar(255) NULL DEFAULT 'authenticated',
-  email varchar(255) UNIQUE,
-  encrypted_password varchar(255) NULL,
-  email_confirmed_at timestamptz NULL DEFAULT now(),
-  invited_at timestamptz NULL,
-  confirmation_token varchar(255) NOT NULL DEFAULT '',
-  confirmation_sent_at timestamptz NULL,
-  recovery_token varchar(255) NOT NULL DEFAULT '',
-  recovery_sent_at timestamptz NULL,
-  email_change_token_new varchar(255) NOT NULL DEFAULT '',
-  email_change varchar(255) NOT NULL DEFAULT '',
-  email_change_sent_at timestamptz NULL,
-  last_sign_in_at timestamptz NULL,
-  raw_app_meta_data jsonb NULL DEFAULT '{"provider":"email","providers":["email"]}'::jsonb,
-  raw_user_meta_data jsonb NULL DEFAULT '{}'::jsonb,
-  is_super_admin bool NULL DEFAULT false,
-  created_at timestamptz NULL DEFAULT now(),
-  updated_at timestamptz NULL DEFAULT now(),
-  phone text NULL DEFAULT NULL UNIQUE,
-  phone_confirmed_at timestamptz NULL,
-  phone_change text NOT NULL DEFAULT '',
-  phone_change_token varchar(255) NOT NULL DEFAULT '',
-  phone_change_sent_at timestamptz NULL,
-  confirmed_at timestamptz NULL DEFAULT now(),
-  email_change_token_current varchar(255) NOT NULL DEFAULT '',
-  email_change_confirm_status smallint NULL DEFAULT 0,
-  banned_until timestamptz NULL,
-  reauthentication_token varchar(255) NOT NULL DEFAULT '',
-  reauthentication_sent_at timestamptz NULL,
-  is_sso_user bool NOT NULL DEFAULT false,
-  deleted_at timestamptz NULL,
-  is_anonymous bool NOT NULL DEFAULT false
-);
+DO $$ BEGIN
+  CREATE TABLE IF NOT EXISTS auth.users (
+    instance_id uuid NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+    id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    aud varchar(255) NULL DEFAULT 'authenticated',
+    role varchar(255) NULL DEFAULT 'authenticated',
+    email varchar(255) UNIQUE,
+    encrypted_password varchar(255) NULL,
+    email_confirmed_at timestamptz NULL DEFAULT now(),
+    invited_at timestamptz NULL,
+    confirmation_token varchar(255) NOT NULL DEFAULT '',
+    confirmation_sent_at timestamptz NULL,
+    recovery_token varchar(255) NOT NULL DEFAULT '',
+    recovery_sent_at timestamptz NULL,
+    email_change_token_new varchar(255) NOT NULL DEFAULT '',
+    email_change varchar(255) NOT NULL DEFAULT '',
+    email_change_sent_at timestamptz NULL,
+    last_sign_in_at timestamptz NULL,
+    raw_app_meta_data jsonb NULL DEFAULT '{"provider":"email","providers":["email"]}'::jsonb,
+    raw_user_meta_data jsonb NULL DEFAULT '{}'::jsonb,
+    is_super_admin bool NULL DEFAULT false,
+    created_at timestamptz NULL DEFAULT now(),
+    updated_at timestamptz NULL DEFAULT now(),
+    phone text NULL DEFAULT NULL UNIQUE,
+    phone_confirmed_at timestamptz NULL,
+    phone_change text NOT NULL DEFAULT '',
+    phone_change_token varchar(255) NOT NULL DEFAULT '',
+    phone_change_sent_at timestamptz NULL,
+    confirmed_at timestamptz NULL DEFAULT now(),
+    email_change_token_current varchar(255) NOT NULL DEFAULT '',
+    email_change_confirm_status smallint NULL DEFAULT 0,
+    banned_until timestamptz NULL,
+    reauthentication_token varchar(255) NOT NULL DEFAULT '',
+    reauthentication_sent_at timestamptz NULL,
+    is_sso_user bool NOT NULL DEFAULT false,
+    deleted_at timestamptz NULL,
+    is_anonymous bool NOT NULL DEFAULT false
+  );
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
-CREATE OR REPLACE FUNCTION auth.uid() 
-RETURNS uuid AS $$
-  SELECT COALESCE(
-    NULLIF(current_setting('request.jwt.claim.sub', true), ''),
-    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
-  )::uuid;
-$$ LANGUAGE sql STABLE;
+DO $$ BEGIN
+  CREATE OR REPLACE FUNCTION auth.uid() 
+  RETURNS uuid AS $func$
+    SELECT COALESCE(
+      NULLIF(current_setting('request.jwt.claim.sub', true), ''),
+      (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+    )::uuid;
+  $func$ LANGUAGE sql STABLE;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
-CREATE OR REPLACE FUNCTION auth.role() 
-RETURNS text AS $$
-  SELECT COALESCE(
-    NULLIF(current_setting('request.jwt.claim.role', true), ''),
-    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
-  )::text;
-$$ LANGUAGE sql STABLE;
+DO $$ BEGIN
+  CREATE OR REPLACE FUNCTION auth.role() 
+  RETURNS text AS $func$
+    SELECT COALESCE(
+      NULLIF(current_setting('request.jwt.claim.role', true), ''),
+      (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
+    )::text;
+  $func$ LANGUAGE sql STABLE;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 -- ------------------------------------------------------------------------------
 -- 3. ENUM TYPES
@@ -151,11 +166,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- 4.3 Tabel Tiket Laporan Limbah B3 (PP 22/2021)
 CREATE TABLE IF NOT EXISTS public.b3_tickets (
-  id VARCHAR(30) PRIMARY KEY, -- Contoh: 'B3-2026-001'
+  id VARCHAR(30) PRIMARY KEY, -- Format: 'B3-2026-001'
   pelapor_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   unit_id UUID REFERENCES public.units(id),
   
-  -- Spesifikasi Limbah
+  -- Spesifikasi Limbah PP 22/2021
   nama_limbah VARCHAR(200) NOT NULL,
   kode_limbah VARCHAR(50) NOT NULL, -- Contoh: 'B105d', 'A106b'
   fase waste_phase NOT NULL,
@@ -190,7 +205,7 @@ CREATE TABLE IF NOT EXISTS public.tps_storage_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id VARCHAR(30) NOT NULL REFERENCES public.b3_tickets(id) ON DELETE CASCADE,
   tgl_masuk_tps TIMESTAMPTZ DEFAULT NOW(),
-  tgl_jatuh_tempo TIMESTAMPTZ NOT NULL, -- Batas waktu simpan TPS
+  tgl_jatuh_tempo TIMESTAMPTZ NOT NULL, -- Deadline batas masa simpan TPS
   posisi_rak_tps VARCHAR(50),
   tgl_pengeluaran TIMESTAMPTZ,
   nama_transporter VARCHAR(100),
@@ -210,7 +225,7 @@ CREATE TABLE IF NOT EXISTS public.password_reset_otps (
 );
 
 -- ------------------------------------------------------------------------------
--- 5. TRIGGER: AUTO CREATE PROFILE DARI AUTH.USERS
+-- 5. TRIGGER: AUTO CREATE PROFILE SAAT USER REGISTER DI AUTH.USERS
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
@@ -327,9 +342,11 @@ CREATE POLICY "Akses Bebas OTP Pemulihan Sandi"
   USING (true) WITH CHECK (true);
 
 -- Berikan izin akses penuh ke role service
-GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role, authenticated, anon;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role, authenticated, anon;
-GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role, authenticated, anon;
+DO $$ BEGIN
+  GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role, authenticated, anon;
+  GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role, authenticated, anon;
+  GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role, authenticated, anon;
+EXCEPTION WHEN OTHERS THEN null; END $$;
 
 -- ------------------------------------------------------------------------------
 -- 7. MASTER DATA: JURUSAN, PROGRAM STUDI, & LABORATORIUM POLIMDO
@@ -400,14 +417,18 @@ BEGIN
 
   -- 8.1 AKUN ADMIN UTAMA K3L: admin@polimdo.ac.id / AdminK3L2026!
   INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
   ) VALUES (
     v_admin_id,
     'admin@polimdo.ac.id',
     crypt('AdminK3L2026!', gen_salt('bf')),
     NOW(),
     '{"full_name":"Petugas Admin K3L POLIMDO","id_number":"198501012010121001","role":"verifikator_k3l"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    'authenticated',
+    'authenticated',
+    '', '', '', ''
   )
   ON CONFLICT (email) DO UPDATE SET
     encrypted_password = crypt('AdminK3L2026!', gen_salt('bf')),
@@ -436,14 +457,18 @@ BEGIN
 
   -- 8.2 AKUN ADMIN PENGELOLA TPS: admin_tps@polimdo.ac.id / AdminTPS2026!
   INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
   ) VALUES (
     v_tps_id,
     'admin_tps@polimdo.ac.id',
     crypt('AdminTPS2026!', gen_salt('bf')),
     NOW(),
     '{"full_name":"Petugas Pengelola TPS B3","id_number":"198804152014041002","role":"admin_tps"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    'authenticated',
+    'authenticated',
+    '', '', '', ''
   )
   ON CONFLICT (email) DO UPDATE SET
     encrypted_password = crypt('AdminTPS2026!', gen_salt('bf')),
@@ -472,14 +497,18 @@ BEGIN
 
   -- 8.3 AKUN LABORAN PELAPOR: laboran@polimdo.ac.id / Pelapor2026!
   INSERT INTO auth.users (
-    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+    id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    aud, role, confirmation_token, recovery_token, email_change_token_new, email_change
   ) VALUES (
     v_user_id,
     'laboran@polimdo.ac.id',
     crypt('Pelapor2026!', gen_salt('bf')),
     NOW(),
     '{"full_name":"Laboran Kimia Terapan","id_number":"199207222019032005","role":"unit_pelapor"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    'authenticated',
+    'authenticated',
+    '', '', '', ''
   )
   ON CONFLICT (email) DO UPDATE SET
     encrypted_password = crypt('Pelapor2026!', gen_salt('bf')),
