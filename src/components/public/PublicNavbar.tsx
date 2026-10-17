@@ -256,26 +256,6 @@ export default function PublicNavbar() {
 
         {/* Mobile controls */}
         <div className="flex md:hidden items-center gap-2">
-          <Link
-            href="/login"
-            className={`text-xs font-bold px-3 py-1.5 rounded-full transition border ${isScrolled
-              ? "border-slate-300 text-slate-700 hover:bg-slate-100"
-              : "border-white/40 text-white hover:bg-white/10"
-              }`}
-          >
-            Masuk
-          </Link>
-
-          <Link
-            href="/daftar"
-            className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${isScrolled
-              ? "bg-[#064e3b] text-white"
-              : "bg-white text-slate-900"
-              }`}
-          >
-            Daftar
-          </Link>
-
           <button
             className={`p-1.5 rounded-lg border transition ${isScrolled
               ? "border-slate-200 text-slate-700 hover:bg-slate-100"
