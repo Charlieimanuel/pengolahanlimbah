@@ -66,9 +66,13 @@ export default function FormPelaporan({
   const [kondisiWadah, setKondisiWadah] = useState("Tertutup Rapat");
   const [keterangan, setKeterangan] = useState("");
 
-  // File Upload
+  // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const selectedFileRef = useRef<File | null>(null);
+  const uploadedPhotoUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Inisialisasi data dari Supabase saat form dimuat
@@ -156,21 +160,50 @@ export default function FormPelaporan({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        setErrorMessage("Ukuran foto maksimal adalah 10 MB.");
+      if (file.size > 20 * 1024 * 1024) {
+        setErrorMessage("Ukuran foto maksimal adalah 20 MB.");
         return;
       }
+      selectedFileRef.current = file;
       setSelectedFile(file);
       setFilePreview(URL.createObjectURL(file));
+      uploadedPhotoUrlRef.current = null;
+      setUploadedPhotoUrl(null);
       setErrorMessage(null);
+
+      // Unggah foto langsung saat file dipilih
+      setIsUploadingPhoto(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/public/upload-evidence", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data?.url) {
+          uploadedPhotoUrlRef.current = data.url;
+          setUploadedPhotoUrl(data.url);
+        } else {
+          console.warn("Peringatan unggah foto awal:", data?.error);
+        }
+      } catch (err) {
+        console.warn("Kesalahan koneksi saat unggah foto:", err);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
   const handleRemoveFile = () => {
+    selectedFileRef.current = null;
+    uploadedPhotoUrlRef.current = null;
     setSelectedFile(null);
+    setUploadedPhotoUrl(null);
+    setIsUploadingPhoto(false);
     if (filePreview) {
       URL.revokeObjectURL(filePreview);
       setFilePreview(null);
@@ -205,30 +238,50 @@ export default function FormPelaporan({
         throw new Error("Nama atau dugaan jenis limbah temuan wajib diisi.");
       }
 
-      // Upload file foto ke Supabase Storage (bucket bukti-limbah)
+      // Pastikan URL foto bukti temuan terunggah dan siap disimpan ke database
       const uploadedUrls: string[] = [];
-      if (selectedFile) {
-        const fileExt = selectedFile.name.split(".").pop() || "jpg";
-        const cleanExt = fileExt.toLowerCase();
-        const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${cleanExt}`;
+      const fileToUpload = selectedFileRef.current || selectedFile;
+      let photoUrl = uploadedPhotoUrlRef.current || uploadedPhotoUrl;
 
-        const { error: uploadError } = await supabase.storage
-          .from("bukti-limbah")
-          .upload(fileName, selectedFile, {
-            cacheControl: "3600",
-            upsert: false,
+      if (!photoUrl && fileToUpload) {
+        // Coba unggah ke API endpoint
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("file", fileToUpload);
+          const uploadRes = await fetch("/api/public/upload-evidence", {
+            method: "POST",
+            body: uploadFormData,
           });
 
-        if (uploadError) {
-          console.warn("Peringatan saat mengunggah foto ke storage:", uploadError.message);
-        } else {
-          const { data: publicUrlData } = supabase.storage
-            .from("bukti-limbah")
-            .getPublicUrl(fileName);
-          if (publicUrlData?.publicUrl) {
-            uploadedUrls.push(publicUrlData.publicUrl);
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok && uploadData?.url) {
+            photoUrl = uploadData.url;
+            uploadedPhotoUrlRef.current = photoUrl;
+            setUploadedPhotoUrl(photoUrl);
+          }
+        } catch (uploadErr) {
+          console.warn("Gagal unggah foto via API, menyiapkan konversi langsung:", uploadErr);
+        }
+
+        // Jika upload API belum menghasilkan URL, gunakan Base64 Data URL sebagai jaminan 100% foto tersimpan
+        if (!photoUrl) {
+          try {
+            photoUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(fileToUpload);
+            });
+            uploadedPhotoUrlRef.current = photoUrl;
+            setUploadedPhotoUrl(photoUrl);
+          } catch (base64Err) {
+            console.error("Gagal konversi foto ke base64:", base64Err);
           }
         }
+      }
+
+      if (photoUrl) {
+        uploadedUrls.push(photoUrl);
       }
 
       const numericVolume = parseFloat(volume.replace(",", ".")) || 1.0;
@@ -706,34 +759,49 @@ export default function FormPelaporan({
                 12. FOTO BUKTI TEMUAN LIMBAH
               </label>
 
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border border-dashed border-[#b8d4c2] hover:border-emerald-600 rounded-2xl p-3.5 sm:p-4 bg-white text-center transition cursor-pointer group"
+              {/* Accessible Native Label + sr-only Input */}
+              <label
+                htmlFor="foto-limbah-input"
+                className="block border border-dashed border-[#b8d4c2] hover:border-emerald-600 rounded-2xl p-3.5 sm:p-4 bg-white text-center transition cursor-pointer group relative"
               >
+                <input
+                  id="foto-limbah-input"
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onClick={(e) => {
+                    (e.target as HTMLInputElement).value = "";
+                  }}
+                  onChange={handleFileChange}
+                  className="sr-only"
+                />
+
                 {filePreview ? (
                   <div className="space-y-2">
-                    <div className="relative w-full h-32 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                    <div className="relative w-full h-36 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                       <img
                         src={filePreview}
                         alt="Preview Bukti Temuan"
                         className="w-full h-full object-cover"
                       />
+                      {isUploadingPhoto ? (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center gap-2 text-white text-xs font-semibold">
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                          <span>Mengunggah foto bukti...</span>
+                        </div>
+                      ) : (uploadedPhotoUrl || selectedFile) ? (
+                        <span className="absolute bottom-2 left-2 bg-emerald-950/80 text-emerald-300 text-[10px] px-2 py-0.5 rounded-md font-medium border border-emerald-500/40">
+                          ✓ Foto Siap Disimpan
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           handleRemoveFile();
                         }}
-                        className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 shadow-md transition"
+                        className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 shadow-md transition cursor-pointer"
                         title="Hapus Foto"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -753,11 +821,11 @@ export default function FormPelaporan({
                       Unggah Foto Wadah & Lokasi Temuan
                     </div>
                     <div className="text-[10px] text-slate-400 mt-0.5">
-                      Format: JPG, PNG, WEBP. Maks. 10 MB.
+                      Format: JPG, PNG, WEBP, Kamera HP. Maks. 20 MB.
                     </div>
                   </>
                 )}
-              </div>
+              </label>
             </div>
 
             {/* 13. CATATAN KONDISI SAAT DITEMUKAN */}

@@ -18,6 +18,7 @@ import {
   Calendar,
   AlertCircle,
   FileCheck,
+  Maximize2,
 } from "lucide-react";
 
 interface TicketDetailModalProps {
@@ -70,6 +71,7 @@ export default function TicketDetailModal({
 }: TicketDetailModalProps) {
   const [detail, setDetail] = useState<DbTicketDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ticketId) {
@@ -127,6 +129,13 @@ export default function TicketDetailModal({
 
   const tpsLog = detail?.tps_storage_logs?.[0] || null;
 
+  const rawPhotos = detail?.foto_limbah_url;
+  const photoUrls: string[] = Array.isArray(rawPhotos)
+    ? rawPhotos.filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+    : typeof rawPhotos === "string" && (rawPhotos as string).trim().length > 0
+    ? [(rawPhotos as string).trim()]
+    : [];
+
   const getStatusBadge = () => {
     if (isTps) {
       return {
@@ -167,8 +176,42 @@ export default function TicketDetailModal({
   const statusBadge = getStatusBadge();
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e2eae4] animate-in fade-in zoom-in-95 space-y-4 max-h-[90vh] overflow-y-auto">
+    <>
+      {/* Lightbox Preview Foto Resolusi Penuh */}
+      {previewPhotoUrl && (
+        <div
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 cursor-pointer animate-in fade-in duration-150"
+          onClick={() => setPreviewPhotoUrl(null)}
+        >
+          <button
+            onClick={() => setPreviewPhotoUrl(null)}
+            className="absolute top-5 right-5 text-white/80 hover:text-white p-2 bg-white/10 rounded-full cursor-pointer hover:bg-white/20 transition"
+            title="Tutup Pratinjau"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={previewPhotoUrl}
+            alt="Bukti Foto Resolusi Penuh"
+            className="max-w-[92vw] max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/20"
+          />
+          <div className="mt-3 flex items-center gap-3">
+            <a
+              href={previewPhotoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <span>Buka di Tab Baru</span>
+            </a>
+            <span className="text-slate-300 text-xs">Klik di mana saja untuk menutup</span>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e2eae4] animate-in fade-in zoom-in-95 space-y-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#e5ece6]">
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
@@ -367,31 +410,42 @@ export default function TicketDetailModal({
             </div>
 
             {/* Foto Bukti Temuan jika ada */}
-            {detail?.foto_limbah_url && detail.foto_limbah_url.length > 0 && (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="text-[10px] text-slate-500 uppercase font-bold mb-2 flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Foto Bukti Fisik Temuan</span>
+            {photoUrls.length > 0 ? (
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="text-[10px] text-slate-500 uppercase font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#284533]" />
+                    <span>Foto Bukti Fisik Temuan</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-normal">
+                    {photoUrls.length} Foto
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {detail.foto_limbah_url.map((url, idx) => (
-                    <a
+                  {photoUrls.map((url, idx) => (
+                    <div
                       key={idx}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block relative h-28 rounded-lg overflow-hidden border border-slate-200 group"
+                      onClick={() => setPreviewPhotoUrl(url)}
+                      className="group relative h-28 rounded-xl overflow-hidden border border-[#dce8df] bg-slate-100 cursor-pointer shadow-xs hover:border-[#284533] transition-all"
                     >
                       <img
                         src={url}
                         alt={`Bukti temuan ${idx + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
-                        Perbesar
-                      </span>
-                    </a>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-xs font-bold">
+                        <Maximize2 className="w-4 h-4" />
+                        <span>Perbesar</span>
+                      </div>
+                    </div>
                   ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl border border-dashed border-[#dce8df] text-center bg-slate-50/50">
+                <div className="flex items-center justify-center gap-1.5 text-slate-400 text-xs">
+                  <ImageIcon className="w-4 h-4 text-slate-300" />
+                  <span>Tidak ada lampiran foto bukti fisik</span>
                 </div>
               </div>
             )}
@@ -557,5 +611,6 @@ export default function TicketDetailModal({
         </div>
       </div>
     </div>
-  );
+  </>
+);
 }
