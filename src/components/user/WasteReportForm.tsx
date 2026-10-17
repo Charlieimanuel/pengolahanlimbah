@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-interface FormPelaporanProps {
+export interface WasteReportFormProps {
   onSubmitSuccess?: (ticketId: string) => void;
   onSaveDraftSuccess?: (ticketId: string) => void;
 }
@@ -40,10 +40,10 @@ interface UserProfile {
   role: string;
 }
 
-export default function FormPelaporan({
+export default function WasteReportForm({
   onSubmitSuccess,
   onSaveDraftSuccess,
-}: FormPelaporanProps) {
+}: WasteReportFormProps) {
   // Database & Profile States
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingInit, setLoadingInit] = useState(true);

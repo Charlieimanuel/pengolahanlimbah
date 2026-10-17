@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import AdminTicketInspectionModal from "@/components/admin/AdminTicketInspectionModal";
+import TicketInspectionModal from "@/components/admin/TicketInspectionModal";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -207,7 +207,7 @@ export default function AdminVerifikasiTiketPage() {
   return (
     <div className="space-y-6">
       {/* Modal Verifikasi Inspeksi K3L */}
-      <AdminTicketInspectionModal
+      <TicketInspectionModal
         ticketId={selectedTicketId}
         isOpen={isModalOpen}
         onClose={closeInspection}

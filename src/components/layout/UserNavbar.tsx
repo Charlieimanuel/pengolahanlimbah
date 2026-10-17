@@ -28,7 +28,7 @@ interface UserProfile {
 }
 
 
-export default function Navbar() {
+export default function UserNavbar() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");

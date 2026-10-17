@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-interface AdminTicketInspectionModalProps {
+export interface TicketInspectionModalProps {
   ticketId: string | null;
   isOpen: boolean;
   onClose: () => void;
@@ -79,12 +79,12 @@ const RAK_TPS_OPTIONS = [
   { id: "Rak D-02", name: "Rak D-02 (Baterai Bekas & Aki Kering/Basah)", zone: "Kategori 2" },
 ];
 
-export default function AdminTicketInspectionModal({
+export default function TicketInspectionModal({
   ticketId,
   isOpen,
   onClose,
   onSuccess,
-}: AdminTicketInspectionModalProps) {
+}: TicketInspectionModalProps) {
   const [mounted, setMounted] = useState(false);
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(false);

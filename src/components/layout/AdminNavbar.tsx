@@ -24,7 +24,7 @@ interface AdminProfile {
   role: string;
 }
 
-export default function NavbarAdmin() {
+export default function AdminNavbar() {
   const router = useRouter();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [pendingCount, setPendingCount] = useState<number>(0);

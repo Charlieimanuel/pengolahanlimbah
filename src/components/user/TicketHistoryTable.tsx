@@ -39,15 +39,15 @@ export interface TicketItem {
   actionType: string;
 }
 
-interface RiwayatTiketProps {
+export interface TicketHistoryTableProps {
   onSelectTicket?: (ticketId: string) => void;
   onStatsLoaded?: (stats: { total: number; pending: number; verified: number; volumeSummary: string }) => void;
 }
 
-export default function RiwayatTiket({
+export default function TicketHistoryTable({
   onSelectTicket,
   onStatsLoaded,
-}: RiwayatTiketProps) {
+}: TicketHistoryTableProps) {
   const [selectedTab, setSelectedTab] = useState("Semua Status");
   const [searchQuery, setSearchQuery] = useState("");
   const [dbTickets, setDbTickets] = useState<TicketItem[]>([]);

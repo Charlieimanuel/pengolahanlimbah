@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import RiwayatTiket from "@/components/user/RiwayatTiket";
+import TicketHistoryTable from "@/components/user/TicketHistoryTable";
 import TicketDetailModal from "@/components/user/TicketDetailModal";
 import MetricCards from "@/components/user/MetricCards";
 
@@ -75,7 +75,7 @@ export default function RiwayatTiketPage() {
       />
 
       {/* Riwayat & Table Component */}
-      <RiwayatTiket
+      <TicketHistoryTable
         onSelectTicket={handleSelectTicket}
         onStatsLoaded={handleStatsLoaded}
       />

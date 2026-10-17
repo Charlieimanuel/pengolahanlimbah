@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import Navbar from "@/components/layout/Navbar";
+import UserNavbar from "@/components/layout/UserNavbar";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -317,7 +317,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           RIGHT CONTENT COLUMN: Pure White Canvas with Rounded Left Corners
       ========================================================= */}
       <div className="flex-1 flex flex-col min-w-0 bg-white md:my-2.5 md:mr-2.5 md:rounded-l-[28px] md:rounded-r-2xl overflow-hidden shadow-2xl md:h-[calc(100vh-20px)]">
-        <Navbar />
+        <UserNavbar />
 
         {/* Main Content Area with Smooth Page Fade Transition */}
         <main className="flex-1 min-w-0 p-3.5 sm:p-5 lg:p-6 space-y-5 sm:space-y-6 overflow-y-auto overflow-x-hidden pb-6 bg-white">

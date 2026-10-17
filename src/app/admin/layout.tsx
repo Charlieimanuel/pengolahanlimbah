@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import NavbarAdmin from "@/components/admin/NavbarAdmin";
+import AdminNavbar from "@/components/layout/AdminNavbar";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -338,7 +338,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           MAIN CONTENT AREA (White Container with Notch Background)
       ========================================================= */}
       <div className="flex-1 flex flex-col bg-white md:rounded-l-3xl overflow-hidden shadow-2xl relative z-10">
-        <NavbarAdmin />
+        <AdminNavbar />
         <main className="flex-1 overflow-y-auto p-4 sm:p-7 bg-[#fbfcfb]">
           <div key={pathname} className="page-transition-enter w-full space-y-5 sm:space-y-6">
             {children}

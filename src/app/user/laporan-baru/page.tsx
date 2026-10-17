@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import FormPelaporan from "@/components/user/FormPelaporan";
+import WasteReportForm from "@/components/user/WasteReportForm";
 import { Leaf } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -70,7 +70,7 @@ export default function LaporanBaruPage() {
 
 
       {/* Main Form Component */}
-      <FormPelaporan
+      <WasteReportForm
         onSubmitSuccess={handleSuccess}
         onSaveDraftSuccess={handleDraftSuccess}
       />
