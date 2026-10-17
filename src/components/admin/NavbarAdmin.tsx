@@ -142,68 +142,99 @@ export default function NavbarAdmin() {
       {/* Right: Actions & Admin Profile */}
       <div className="flex items-center gap-2.5 sm:gap-3.5">
 
-        {/* Notification Bell with Badge */}
-        <div className="relative" ref={notifRef}>
-          <button
-            type="button"
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-xl border border-[#dce8df] hover:bg-[#f4f7f5] text-slate-600 transition cursor-pointer"
-            title="Notifikasi Laporan"
-          >
-            <Bell className="w-4 h-4" />
-            {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notification Dropdown */}
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#e2eae4] p-3 text-xs z-50 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 font-bold text-slate-900">
-                <span>Notifikasi K3L</span>
-                <span className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
-                  {emergencyCount} Darurat
+          {/* Notification Bell with Badge */}
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowNotifications((prev) => !prev);
+                setShowDropdown(false);
+              }}
+              className="relative p-2 rounded-xl border border-[#dce8df] hover:bg-[#f4f7f5] text-slate-600 transition cursor-pointer"
+              title="Notifikasi Laporan"
+            >
+              <Bell className="w-4 h-4" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCount}
                 </span>
-              </div>
-              <div className="py-2 space-y-2">
-                {pendingCount > 0 ? (
-                  <Link
-                    href="/admin/verifikasi-tiket"
-                    onClick={() => setShowNotifications(false)}
-                    className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition border border-slate-100"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900">
-                        {pendingCount} Laporan Temuan Baru
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
-                        Menunggu verifikasi fisik & penjemputan ke TPS.
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="py-4 text-center text-slate-400">
-                    Tidak ada antrean laporan baru saat ini.
-                  </div>
-                )}
-              </div>
-              <div className="pt-2 border-t border-slate-100 text-center">
-                <Link
-                  href="/admin/verifikasi-tiket"
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <>
+                {/* Mobile Backdrop Overlay */}
+                <div
+                  className="sm:hidden fixed inset-0 z-40 bg-black/25 backdrop-blur-2xs"
                   onClick={() => setShowNotifications(false)}
-                  className="text-xs font-bold text-[#284533] hover:underline"
-                >
-                  Lihat Semua Antrean Tiket →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
+                />
+
+                <div className="fixed inset-x-3 sm:inset-auto sm:right-0 top-14 sm:top-full sm:mt-2 z-50 w-auto sm:w-80 max-w-sm mx-auto sm:mx-0 bg-white rounded-2xl shadow-xl border border-[#e2eae4] p-3 text-xs animate-in fade-in zoom-in-95 max-h-[80vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 font-bold text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <span>Notifikasi K3L</span>
+                      {emergencyCount > 0 ? (
+                        <span className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold">
+                          {emergencyCount} Darurat
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-[#eaf4ed] text-[#284533] px-2 py-0.5 rounded-full font-semibold">
+                          Aktif
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowNotifications(false)}
+                      className="sm:hidden p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                      title="Tutup Notifikasi"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="py-2 space-y-2">
+                    {pendingCount > 0 ? (
+                      <Link
+                        href="/admin/verifikasi-tiket"
+                        onClick={() => setShowNotifications(false)}
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition border border-slate-100 active:scale-[0.99]"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-900 text-xs truncate">
+                            {pendingCount} Laporan Temuan Baru
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                            Menunggu verifikasi fisik & penjemputan ke TPS.
+                          </div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="py-6 text-center text-slate-400 space-y-1">
+                        <p className="font-semibold text-slate-600 text-xs">Belum Ada Notifikasi Baru</p>
+                        <p className="text-[11px] text-slate-400">Tidak ada antrean laporan baru saat ini.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 text-center">
+                    <Link
+                      href="/admin/verifikasi-tiket"
+                      onClick={() => setShowNotifications(false)}
+                      className="inline-flex items-center justify-center gap-1 text-xs font-bold text-[#284533] hover:underline py-1 w-full"
+                    >
+                      <span>Lihat Semua Antrean Tiket</span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
         {/* Admin Profile Pill: Separated Avatar Button & Dropdown Chevron */}
         <div className="relative" ref={dropdownRef}>
@@ -221,7 +252,10 @@ export default function NavbarAdmin() {
             {/* Button 2: Separated Chevron-Down button (toggles Dropdown Menu) */}
             <button
               type="button"
-              onClick={() => setShowDropdown((prev) => !prev)}
+              onClick={() => {
+                setShowDropdown((prev) => !prev);
+                setShowNotifications(false);
+              }}
               title="Menu Profil & Pengaturan"
               className="w-6 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer pr-1"
             >
