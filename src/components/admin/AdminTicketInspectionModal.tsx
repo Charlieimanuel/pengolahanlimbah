@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import {
   X,
@@ -83,10 +84,12 @@ export default function AdminTicketInspectionModal({
   onClose,
   onSuccess,
 }: AdminTicketInspectionModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"evakuasi" | "tolak">("evakuasi");
+  const [mobileSection, setMobileSection] = useState<"detail" | "form">("detail");
 
   // Form states for inspection
   const [adjustedKode, setAdjustedKode] = useState("");
@@ -97,6 +100,21 @@ export default function AdminTicketInspectionModal({
   const [catatanVerifikasi, setCatatanVerifikasi] = useState("");
   const [alasanPenolakan, setAlasanPenolakan] = useState("");
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMobileSection("detail");
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !ticketId) {
@@ -157,6 +175,42 @@ export default function AdminTicketInspectionModal({
     month: "long",
     year: "numeric",
   });
+
+  // Normalize photo URLs
+  const getPhotoUrls = (): string[] => {
+    const raw = ticket?.foto_limbah_url || (ticket as any)?.foto_url || (ticket as any)?.foto_bukti_url;
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw
+        .map((u) => {
+          if (typeof u === "string") {
+            try {
+              if (u.startsWith("[") && u.endsWith("]")) {
+                const parsed = JSON.parse(u);
+                return Array.isArray(parsed) ? parsed[0] : u;
+              }
+            } catch {}
+            return u.trim();
+          }
+          return "";
+        })
+        .filter((u): u is string => typeof u === "string" && u.length > 0);
+    }
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      try {
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed.filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+          }
+        }
+      } catch {}
+      return [raw.trim()];
+    }
+    return [];
+  };
+
+  const photoUrls = getPhotoUrls();
 
   const handleEvakuasiDanTerima = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,59 +307,80 @@ export default function AdminTicketInspectionModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) {
+          onClose();
+        }
+      }}
+    >
       {/* Lightbox Preview Foto Besar */}
       {previewPhotoUrl && (
         <div
-          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 cursor-pointer"
+          className="fixed inset-0 z-110 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-3 sm:p-4 cursor-pointer animate-in fade-in duration-150"
           onClick={() => setPreviewPhotoUrl(null)}
         >
           <button
             onClick={() => setPreviewPhotoUrl(null)}
-            className="absolute top-5 right-5 text-white/80 hover:text-white p-2 bg-white/10 rounded-full"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 text-white/80 hover:text-white p-2 bg-white/10 rounded-full cursor-pointer hover:bg-white/20 transition"
+            title="Tutup Pratinjau"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <img
             src={previewPhotoUrl}
             alt="Bukti Foto Resolusi Penuh"
-            className="max-w-[92vw] max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/20"
+            className="max-w-[96vw] max-h-[80vh] sm:max-w-[92vw] sm:max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/20"
           />
-          <p className="mt-3 text-slate-300 text-xs sm:text-sm">Klik di mana saja untuk menutup pratinjau</p>
+          <div className="mt-3 flex items-center gap-3">
+            <a
+              href={previewPhotoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-3.5 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <span>Buka Resolusi Asli</span>
+            </a>
+            <span className="text-slate-300 text-xs">Klik di mana saja untuk menutup</span>
+          </div>
         </div>
       )}
 
       {/* Main Container Modal */}
-      <div className="relative w-full max-w-5xl bg-white border border-[#e2eae4] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-5xl bg-white border border-[#e2eae4] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[96dvh] sm:max-h-[92vh]">
         {/* Header Modal — Rich Forest Green Botanical Banner */}
-        <div className="relative overflow-hidden bg-[#284533] text-white px-6 py-5 border-b border-[#1e3426] flex items-center justify-between">
+        <div className="relative overflow-hidden bg-[#284533] text-white px-3.5 py-3 sm:px-6 sm:py-4.5 border-b border-[#1e3426] flex items-center justify-between shrink-0">
           <div
             className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-30 scale-105"
             style={{ backgroundImage: `url('/images/banner-leaf-bg.jpg')` }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a3324]/90 via-[#233f2d]/75 to-[#182f21]/65 pointer-events-none" />
 
-          <div className="relative z-10 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300 shadow-inner">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="relative z-10 flex items-center gap-2.5 sm:gap-3.5 min-w-0 pr-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300 shadow-inner shrink-0">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono tracking-widest text-emerald-300 font-bold uppercase">
-                  Inspeksi & Verifikasi K3L
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="text-[9px] sm:text-[10px] font-mono tracking-wider sm:tracking-widest text-emerald-300 font-bold uppercase">
+                  Inspeksi & Verifikasi
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/10 border border-white/20 text-white font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono bg-white/10 border border-white/20 text-white font-bold">
                   {ticket?.id || ticketId}
                 </span>
                 {ticket?.is_emergency && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600/90 text-white animate-pulse flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 text-white" />
-                    Kedaruratan Tinggi
+                  <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-red-600/90 text-white animate-pulse flex items-center gap-1">
+                    <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                    Kedaruratan
                   </span>
                 )}
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
+              <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight mt-0.5 truncate">
                 {ticket ? ticket.nama_limbah : "Memuat Data Tiket..."}
               </h2>
             </div>
@@ -313,12 +388,45 @@ export default function AdminTicketInspectionModal({
 
           <button
             onClick={onClose}
-            className="relative z-10 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition cursor-pointer"
+            className="relative z-10 p-1.5 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition cursor-pointer shrink-0"
             title="Tutup Modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Mobile Navigation Tabs (Hanya Muncul di Layar HP < lg) */}
+        {ticket && !loading && (
+          <div className="lg:hidden flex border-b border-[#e5ece6] bg-[#f8faf8] p-1.5 gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setMobileSection("detail")}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileSection === "detail"
+                  ? "bg-[#284533] text-white shadow-xs"
+                  : "bg-white text-slate-600 border border-[#e5ece6] hover:bg-slate-50"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Detail Temuan</span>
+              {ticket.foto_limbah_url && ticket.foto_limbah_url.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSection("form")}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileSection === "form"
+                  ? "bg-[#284533] text-white shadow-xs"
+                  : "bg-white text-slate-600 border border-[#e5ece6] hover:bg-slate-50"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Formulir K3L</span>
+            </button>
+          </div>
+        )}
 
         {/* Modal Body */}
         {loading ? (
@@ -334,7 +442,11 @@ export default function AdminTicketInspectionModal({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-[#e5ece6] flex-1">
             {/* SISI KIRI: Detail Laporan Temuan Pelapor (5 Kolom) */}
-            <div className="lg:col-span-5 p-5 sm:p-6 space-y-4 bg-[#fbfcfb] overflow-y-auto">
+            <div
+              className={`lg:col-span-5 p-3.5 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 bg-[#fbfcfb] overflow-y-auto ${
+                mobileSection === "detail" ? "block" : "hidden lg:block"
+              }`}
+            >
               {/* Card Lokasi Temuan */}
               <div className="p-4 rounded-xl bg-white border border-[#e2eae4] shadow-xs space-y-2">
                 <div className="flex items-center gap-2 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
@@ -346,6 +458,70 @@ export default function AdminTicketInspectionModal({
                   <div className="text-xs text-slate-600 bg-[#f8faf8] px-3 py-1.5 rounded-lg border border-[#e2eae4] flex items-start gap-1.5">
                     <span className="font-semibold text-emerald-800 shrink-0">Patokan:</span>
                     <span>{ticket.patokan_lokasi}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Foto Bukti Limbah Temuan (Utama di Sisi Kiri) */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#e2eae4] shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5 text-emerald-800">
+                    <ImageIcon className="w-4 h-4 text-emerald-700" />
+                    Bukti Visual Lapangan
+                  </span>
+                  {photoUrls.length > 0 ? (
+                    <span className="text-[10px] text-slate-600 font-semibold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      {photoUrls.length} Foto Terlampir
+                    </span>
+                  ) : null}
+                </div>
+
+                {photoUrls.length > 0 ? (
+                  photoUrls.length === 1 ? (
+                    <div
+                      onClick={() => setPreviewPhotoUrl(photoUrls[0])}
+                      className="group relative h-48 sm:h-56 rounded-xl overflow-hidden border border-[#dce8df] bg-slate-100 cursor-pointer shadow-xs hover:border-[#284533] transition-all"
+                      title="Klik untuk memperbesar foto resolusi penuh"
+                    >
+                      <img
+                        src={photoUrls[0]}
+                        alt="Bukti visual temuan limbah"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+                        <Maximize2 className="w-4 h-4" />
+                        <span>Klik untuk Memperbesar Foto</span>
+                      </div>
+                      <span className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md font-medium backdrop-blur-xs">
+                        🔍 Resolusi Penuh
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {photoUrls.map((url, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setPreviewPhotoUrl(url)}
+                          className="group relative h-28 sm:h-32 rounded-xl overflow-hidden border border-[#dce8df] bg-slate-100 cursor-pointer shadow-xs hover:border-[#284533] transition-all"
+                          title="Klik untuk memperbesar foto"
+                        >
+                          <img
+                            src={url}
+                            alt={`Bukti visual ${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-xs font-bold">
+                            <Maximize2 className="w-4 h-4" />
+                            <span>Perbesar</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="py-6 px-4 rounded-xl border border-dashed border-[#dce8df] text-center bg-[#fbfcfb]">
+                    <ImageIcon className="w-6 h-6 text-slate-300 mx-auto mb-1" />
+                    <p className="text-xs text-slate-400">Tidak ada lampiran foto dari pelapor</p>
                   </div>
                 )}
               </div>
@@ -411,87 +587,123 @@ export default function AdminTicketInspectionModal({
                 </div>
               </div>
 
-              {/* Foto Bukti Limbah Temuan */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-[#284533]" />
-                    Bukti Visual Lapangan
-                  </span>
-                  {ticket.foto_limbah_url && ticket.foto_limbah_url.length > 0 && (
-                    <span className="text-[10px] text-slate-500 font-normal">{ticket.foto_limbah_url.length} Gambar</span>
-                  )}
-                </div>
-
-                {ticket.foto_limbah_url && ticket.foto_limbah_url.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {ticket.foto_limbah_url.map((url, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => setPreviewPhotoUrl(url)}
-                        className="group relative h-28 rounded-xl overflow-hidden border border-[#dce8df] bg-slate-100 cursor-pointer shadow-xs hover:border-[#284533] transition-all"
-                      >
-                        <img
-                          src={url}
-                          alt={`Bukti visual ${idx + 1}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-xs font-bold">
-                          <Maximize2 className="w-4 h-4" />
-                          <span>Perbesar</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-6 px-4 rounded-xl border border-dashed border-[#dce8df] text-center bg-white">
-                    <ImageIcon className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                    <p className="text-xs text-slate-400">Tidak ada lampiran foto dari pelapor</p>
-                  </div>
-                )}
-              </div>
-
               {ticket.deskripsi_sumber && (
                 <div className="p-3 rounded-xl bg-white border border-[#e2eae4] text-xs text-slate-700 leading-relaxed">
                   <span className="font-bold text-slate-900 block mb-0.5">Catatan Pelapor:</span>
                   {ticket.deskripsi_sumber}
                 </div>
               )}
+
+              {/* Tombol Lanjut ke Form di Layar HP */}
+              <div className="lg:hidden pt-2 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileSection("form")}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#284533] hover:bg-[#1e3426] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition cursor-pointer active:scale-95"
+                >
+                  <span>Lanjut ke Formulir Keputusan K3L</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* SISI KANAN: Formulir Verifikasi & Keputusan K3L (7 Kolom) */}
-            <div className="lg:col-span-7 p-5 sm:p-6 flex flex-col justify-between space-y-5 bg-white">
+            <div
+              className={`lg:col-span-7 p-3.5 sm:p-5 lg:p-6 flex flex-col justify-between space-y-4 sm:space-y-5 bg-white overflow-y-auto ${
+                mobileSection === "form" ? "flex" : "hidden lg:flex"
+              }`}
+            >
+              {/* Quick summary for mobile with photo thumbnail */}
+              <div className="lg:hidden p-2.5 rounded-xl bg-[#f4f8f5] border border-[#dce8df] flex items-center gap-2.5 text-xs">
+                {photoUrls.length > 0 ? (
+                  <div
+                    onClick={() => setPreviewPhotoUrl(photoUrls[0])}
+                    className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#dce8df] shrink-0 bg-slate-100 cursor-pointer hover:border-[#284533] transition"
+                    title="Klik untuk memperbesar foto"
+                  >
+                    <img src={photoUrls[0]} alt="Bukti" className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-[9px] font-bold opacity-0 hover:opacity-100 transition-opacity">
+                      🔍
+                    </span>
+                  </div>
+                ) : null}
+                <div className="truncate flex-1 min-w-0">
+                  <span className="text-[10px] text-slate-400 block font-semibold">Limbah Terpilih:</span>
+                  <span className="font-bold text-slate-900 truncate block">{ticket.nama_limbah}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileSection("detail")}
+                  className="text-[11px] text-[#284533] font-bold underline shrink-0 cursor-pointer"
+                >
+                  Detail Lengkap
+                </button>
+              </div>
+
               {/* Tab Tindakan K3L */}
-              <div className="space-y-4">
-                <div className="flex rounded-xl bg-[#f4f7f5] p-1 border border-[#dce8df]">
+              <div className="space-y-3 sm:space-y-3.5">
+                <div className="flex rounded-xl bg-[#f4f7f5] p-1 border border-[#dce8df] gap-1">
                   <button
                     type="button"
                     onClick={() => setActiveTab("evakuasi")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                       activeTab === "evakuasi"
                         ? "bg-[#284533] text-white shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Terima & Evakuasi ke TPS
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Terima & Evakuasi</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("tolak")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                       activeTab === "tolak"
                         ? "bg-red-600 text-white shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    <AlertTriangle className="w-4 h-4" />
-                    Tolak Laporan / Bukan B3
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Tolak Laporan</span>
                   </button>
                 </div>
 
+                {/* Pratinjau Foto Bukti Lapangan Langsung di Kolom Form */}
+                {photoUrls.length > 0 && (
+                  <div className="p-2.5 sm:p-3 rounded-xl bg-[#f8faf8] border border-[#dce8df] space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#284533]" />
+                        <span>Foto Bukti Fisik Lapangan ({photoUrls.length})</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">Klik untuk memperbesar</span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {photoUrls.map((url, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setPreviewPhotoUrl(url)}
+                          className="group relative h-20 w-28 shrink-0 rounded-lg overflow-hidden border border-[#dce8df] bg-slate-100 cursor-pointer hover:border-[#284533] shadow-xs transition"
+                          title="Klik untuk memperbesar foto bukti"
+                        >
+                          <img
+                            src={url}
+                            alt={`Bukti visual ${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                            <Maximize2 className="w-3 h-3" />
+                            <span>Perbesar</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === "evakuasi" ? (
-                  <form id="form-evakuasi" onSubmit={handleEvakuasiDanTerima} className="space-y-3.5">
+                  <form id="form-evakuasi" onSubmit={handleEvakuasiDanTerima} className="space-y-3 sm:space-y-3.5">
                     {/* 1. Klasifikasi Kode Limbah PP 22/2021 */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
@@ -571,7 +783,7 @@ export default function AdminTicketInspectionModal({
                     </div>
 
                     {/* 4. Durasi Masa Simpan & Perhitungan Jatuh Tempo PP 22/2021 */}
-                    <div className="p-3.5 rounded-xl bg-[#f8faf8] border border-[#e2eae4] space-y-2">
+                    <div className="p-3 sm:p-3.5 rounded-xl bg-[#f8faf8] border border-[#e2eae4] space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-[#284533]" />
@@ -580,24 +792,24 @@ export default function AdminTicketInspectionModal({
                         <span className="text-[#284533] font-mono font-bold">{masaSimpanHari} Hari</span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                         {[
-                          { days: 90, label: "90 Hari", desc: "Kat. 1 / Bahaya" },
+                          { days: 90, label: "90 Hari", desc: "Kat. 1" },
                           { days: 180, label: "180 Hari", desc: "Kat. 2 Spesifik" },
-                          { days: 365, label: "365 Hari", desc: "Kat. 2 Umum (<50kg)" },
+                          { days: 365, label: "365 Hari", desc: "Kat. 2 Umum" },
                         ].map((m) => (
                           <button
                             key={m.days}
                             type="button"
                             onClick={() => setMasaSimpanHari(m.days)}
-                            className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
+                            className={`p-1.5 sm:p-2 rounded-xl text-center border transition-all cursor-pointer ${
                               masaSimpanHari === m.days
                                 ? "bg-[#eaf4ed] border-[#284533] text-[#284533] font-bold shadow-xs"
                                 : "bg-white border-[#e5ece6] text-slate-600 hover:text-slate-900"
                             }`}
                           >
-                            <span className="block text-xs font-bold">{m.label}</span>
-                            <span className="block text-[9px] text-slate-500">{m.desc}</span>
+                            <span className="block text-[11px] sm:text-xs font-bold">{m.label}</span>
+                            <span className="block text-[8px] sm:text-[9px] text-slate-500 truncate">{m.desc}</span>
                           </button>
                         ))}
                       </div>
@@ -626,7 +838,7 @@ export default function AdminTicketInspectionModal({
                 ) : (
                   /* Form Penolakan */
                   <form id="form-tolak" onSubmit={handleTolakLaporan} className="space-y-4">
-                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 space-y-1.5">
+                    <div className="p-3 sm:p-4 rounded-xl bg-red-50 border border-red-200 space-y-1.5">
                       <div className="flex items-center gap-2 text-red-700 font-bold text-xs uppercase tracking-wider">
                         <AlertTriangle className="w-4 h-4 text-red-600" />
                         Peringatan Penolakan Tiket
@@ -673,12 +885,12 @@ export default function AdminTicketInspectionModal({
               </div>
 
               {/* Action Buttons Footer */}
-              <div className="pt-4 border-t border-[#e5ece6] flex items-center justify-end gap-3">
+              <div className="pt-3 sm:pt-4 border-t border-[#e5ece6] flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 bg-white sticky bottom-0 z-10 pb-1 sm:pb-0">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="px-4 py-2.5 rounded-xl border border-[#dce8df] text-slate-700 hover:bg-[#f8faf8] text-xs sm:text-sm font-semibold transition cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#dce8df] text-slate-700 hover:bg-[#f8faf8] text-xs sm:text-sm font-semibold transition cursor-pointer disabled:opacity-50 text-center"
                 >
                   Batal
                 </button>
@@ -688,7 +900,7 @@ export default function AdminTicketInspectionModal({
                     type="submit"
                     form="form-evakuasi"
                     disabled={submitting}
-                    className="px-5 py-2.5 rounded-xl bg-[#284533] hover:bg-[#1e3527] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center gap-2 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#284533] hover:bg-[#1e3527] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {submitting ? (
                       <>
@@ -707,7 +919,7 @@ export default function AdminTicketInspectionModal({
                     type="submit"
                     form="form-tolak"
                     disabled={submitting}
-                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-xs flex items-center gap-2 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {submitting ? (
                       <>
@@ -727,6 +939,7 @@ export default function AdminTicketInspectionModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

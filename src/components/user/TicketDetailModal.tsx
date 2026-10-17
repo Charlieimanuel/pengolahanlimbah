@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import {
   X,
@@ -69,9 +70,24 @@ export default function TicketDetailModal({
   ticketId,
   onClose,
 }: TicketDetailModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [detail, setDetail] = useState<DbTicketDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (ticketId) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [ticketId]);
 
   useEffect(() => {
     if (!ticketId) {
@@ -116,7 +132,7 @@ export default function TicketDetailModal({
     loadDetail();
   }, [ticketId]);
 
-  if (!ticketId) return null;
+  if (!ticketId || !mounted) return null;
 
   const isFromDb = detail !== null;
   const statusStr = detail?.status || "menunggu_verifikasi";
@@ -175,12 +191,12 @@ export default function TicketDetailModal({
 
   const statusBadge = getStatusBadge();
 
-  return (
+  return createPortal(
     <>
       {/* Lightbox Preview Foto Resolusi Penuh */}
       {previewPhotoUrl && (
         <div
-          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 cursor-pointer animate-in fade-in duration-150"
+          className="fixed inset-0 z-110 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 cursor-pointer animate-in fade-in duration-150"
           onClick={() => setPreviewPhotoUrl(null)}
         >
           <button
@@ -210,7 +226,14 @@ export default function TicketDetailModal({
         </div>
       )}
 
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div
+        className="fixed inset-0 z-100 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
+      >
         <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e2eae4] animate-in fade-in zoom-in-95 space-y-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#e5ece6]">
@@ -611,6 +634,7 @@ export default function TicketDetailModal({
         </div>
       </div>
     </div>
-  </>
+  </>,
+  document.body
 );
 }
