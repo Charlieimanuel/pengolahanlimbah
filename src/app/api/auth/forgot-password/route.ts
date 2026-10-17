@@ -188,9 +188,9 @@ export async function POST(request: Request) {
       // Nonaktifkan OTP sebelumnya yang belum digunakan untuk email ini
       await adminClient
         .from("password_reset_otps")
-        .update({ used: true })
+        .update({ is_used: true })
         .eq("email", targetEmail)
-        .eq("used", false);
+        .eq("is_used", false);
 
       // Simpan OTP baru ke database
       const { error: insertErr } = await adminClient
@@ -199,7 +199,7 @@ export async function POST(request: Request) {
           email: targetEmail,
           otp_code: otpCode,
           expires_at: expiresAt,
-          used: false,
+          is_used: false,
         });
 
       if (insertErr) {
@@ -294,7 +294,7 @@ export async function POST(request: Request) {
         .select("*")
         .eq("email", cleanEmail)
         .eq("otp_code", cleanOtp)
-        .eq("used", false)
+        .eq("is_used", false)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -348,7 +348,7 @@ export async function POST(request: Request) {
         .select("*")
         .eq("email", cleanEmail)
         .eq("otp_code", cleanOtp)
-        .eq("used", false)
+        .eq("is_used", false)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -406,7 +406,7 @@ export async function POST(request: Request) {
       // Tandai OTP sebagai telah digunakan
       await adminClient
         .from("password_reset_otps")
-        .update({ used: true })
+        .update({ is_used: true })
         .eq("id", record.id);
 
       return NextResponse.json({
