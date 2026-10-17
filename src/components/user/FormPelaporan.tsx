@@ -104,14 +104,25 @@ export default function FormPelaporan({
           }
         }
 
-        // 2. Generate ID Tiket Riil berdasarkan jumlah data tiket di database
+        // 2. Generate ID Tiket Riil berdasarkan data tiket di database (lintas pengguna)
         const year = new Date().getFullYear();
-        const { count } = await supabase
-          .from("b3_tickets")
-          .select("*", { count: "exact", head: true });
-
-        const nextNumber = String((count || 0) + 1).padStart(3, "0");
-        setTicketId(`B3-${year}-${nextNumber}`);
+        let initialTicketId = `B3-${year}-001`;
+        try {
+          const res = await fetch("/api/public/next-ticket-id");
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.nextId) {
+              initialTicketId = data.nextId;
+            }
+          }
+        } catch {
+          const { count } = await supabase
+            .from("b3_tickets")
+            .select("*", { count: "exact", head: true });
+          const nextNumber = String((count || 0) + 1).padStart(3, "0");
+          initialTicketId = `B3-${year}-${nextNumber}`;
+        }
+        setTicketId(initialTicketId);
 
         // 3. Format waktu lokal saat ini
         const now = new Date();
@@ -225,17 +236,20 @@ export default function FormPelaporan({
         karakteristikBahaya.includes("Beracun (Toksik)") ||
         kondisiWadah.toLowerCase().includes("bocor");
 
-      // Cek apakah ticketId sudah pernah dipakai agar tidak terjadi bentrok primary key
+      // Validasi ketersediaan ticketId agar tidak terjadi bentrok primary key b3_tickets_pkey
       let finalTicketId = ticketId;
-      const { data: existingTicket } = await supabase
-        .from("b3_tickets")
-        .select("id")
-        .eq("id", finalTicketId)
-        .maybeSingle();
-
-      if (existingTicket) {
-        const year = new Date().getFullYear();
-        finalTicketId = `B3-${year}-${Math.floor(100 + Math.random() * 900)}`;
+      try {
+        const checkRes = await fetch(
+          `/api/public/next-ticket-id?candidate=${encodeURIComponent(finalTicketId)}`
+        );
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData?.nextId) {
+            finalTicketId = checkData.nextId;
+          }
+        }
+      } catch (err) {
+        console.warn("Peringatan saat memeriksa keunikan ID tiket:", err);
       }
 
       // Payload sesuai dengan skema tabel public.b3_tickets di database
@@ -259,9 +273,52 @@ export default function FormPelaporan({
         status: statusTarget,
       };
 
-      const { error: insertError } = await supabase
-        .from("b3_tickets")
-        .insert(payload);
+      // Simpan tiket dengan perlindungan retry otomatis jika terdeteksi bentrok b3_tickets_pkey
+      let insertError: any = null;
+      let currentTicketId = finalTicketId;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const currentPayload = {
+          ...payload,
+          id: currentTicketId,
+        };
+
+        const { error } = await supabase
+          .from("b3_tickets")
+          .insert(currentPayload);
+
+        if (!error) {
+          insertError = null;
+          finalTicketId = currentTicketId;
+          break;
+        }
+
+        insertError = error;
+        const isDuplicate =
+          error.code === "23505" ||
+          error.message?.toLowerCase().includes("b3_tickets_pkey") ||
+          error.message?.toLowerCase().includes("duplicate key");
+
+        if (isDuplicate) {
+          try {
+            const freshRes = await fetch("/api/public/next-ticket-id");
+            if (freshRes.ok) {
+              const freshData = await freshRes.json();
+              if (freshData?.nextId) {
+                currentTicketId = freshData.nextId;
+                continue;
+              }
+            }
+          } catch {
+            // fallback
+          }
+          const year = new Date().getFullYear();
+          currentTicketId = `B3-${year}-${Math.floor(100 + Math.random() * 900)}`;
+          continue;
+        } else {
+          break;
+        }
+      }
 
       if (insertError) {
         throw new Error(insertError.message);
