@@ -1,44 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import FormPelaporan from "@/components/user/FormPelaporan";
-import { CheckCircle2, Leaf } from "lucide-react";
-
+import { Leaf } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
 
 export default function LaporanBaruPage() {
   const router = useRouter();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 4000);
-  };
 
   const handleSuccess = (id: string) => {
-    showToast(`Laporan temuan #${id} berhasil terkirim ke Tim K3L POLIMDO! Mengarahkan ke riwayat tiket...`);
+    toast.success(`Laporan #${id} Berhasil Terkirim!`, {
+      description: "Tim K3L POLIMDO akan segera meninjau temuan limbah Anda.",
+    });
     setTimeout(() => {
       router.push("/user/riwayat-tiket");
       router.refresh();
-    }, 1000);
+    }, 600);
   };
 
   const handleDraftSuccess = (id: string) => {
-    showToast(`Draft laporan #${id} berhasil disimpan ke database.`);
+    toast.info(`Draft #${id} Berhasil Disimpan`, {
+      description: "Draft laporan berhasil disimpan ke database.",
+    });
   };
 
   return (
     <div className="space-y-6 w-full">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-5 sm:top-5 z-50 bg-[#064e3b] text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-emerald-500/40 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-          </div>
-          <span className="font-semibold">{toastMessage}</span>
-        </div>
-      )}
-
       {/* Header Banner with Rich Botanical Leaf Background */}
       <div className="relative overflow-hidden rounded-2xl bg-[#284533] text-white p-4 sm:p-7 shadow-sm border border-[#1e3426]">
         {/* Real Botanical Leaf Wallpaper Pattern */}

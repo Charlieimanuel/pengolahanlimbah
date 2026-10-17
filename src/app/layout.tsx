@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 import React from "react";
+import { Toaster } from "@/components/ui/Toaster";
 
 export const metadata: Metadata = {
   title: "SIM-LB3 POLIMDO - Portal Sintes Akademika",
@@ -37,6 +38,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#f8fafc] text-slate-800 antialiased font-sans">
         {children}
+        <Toaster />
       </body>
     </html>
   );

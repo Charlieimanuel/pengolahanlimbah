@@ -15,6 +15,7 @@ import {
   Shield,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "@/lib/toast";
 
 interface UserProfile {
   id?: string;
@@ -273,7 +274,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => {
-                        alert("Semua notifikasi ditandai sebagai telah dibaca.");
+                        toast.success("Semua notifikasi ditandai dibaca");
                         setShowNotifications(false);
                       }}
                       className="text-slate-500 hover:text-slate-800 font-medium cursor-pointer"

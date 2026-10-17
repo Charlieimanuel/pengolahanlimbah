@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface FormPelaporanProps {
   onSubmitSuccess?: (ticketId: string) => void;
@@ -391,6 +392,9 @@ export default function FormPelaporan({
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyimpan laporan ke database.";
       setErrorMessage(msg);
+      toast.error("Gagal Menyimpan Laporan", {
+        description: msg,
+      });
     } finally {
       setSubmitting(false);
     }

@@ -24,6 +24,7 @@ import {
   Maximize2,
   Check,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface AdminTicketInspectionModalProps {
   ticketId: string | null;
@@ -258,11 +259,17 @@ export default function AdminTicketInspectionModal({
         console.warn("Log TPS info:", logError.message);
       }
 
+      toast.success(`Tiket #${ticket.id} Berhasil Diverifikasi!`, {
+        description: `Limbah telah dijadwalkan evakuasi ke ${selectedRak} TPS POLIMDO.`,
+      });
+
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error("Gagal memproses verifikasi limbah:", err);
-      alert(`Terjadi kesalahan saat memverifikasi: ${err?.message || "Koneksi terputus"}`);
+      toast.error("Gagal Memverifikasi Tiket", {
+        description: err?.message || "Koneksi terputus ke database",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -273,7 +280,9 @@ export default function AdminTicketInspectionModal({
     if (!ticket) return;
 
     if (!alasanPenolakan.trim()) {
-      alert("Mohon berikan alasan penolakan agar pelapor memahami tindakan yang perlu diambil.");
+      toast.warning("Alasan Penolakan Wajib Diisi", {
+        description: "Mohon berikan alasan agar pelapor memahami tindakan yang perlu diambil.",
+      });
       return;
     }
 
@@ -297,11 +306,17 @@ export default function AdminTicketInspectionModal({
 
       if (error) throw error;
 
+      toast.info(`Tiket #${ticket.id} Telah Ditolak`, {
+        description: "Catatan penolakan telah tersimpan dan diteruskan ke pelapor.",
+      });
+
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error("Gagal menolak tiket:", err);
-      alert(`Gagal menolak laporan: ${err?.message || "Kesalahan database"}`);
+      toast.error("Gagal Menolak Tiket", {
+        description: err?.message || "Kesalahan koneksi database",
+      });
     } finally {
       setSubmitting(false);
     }
