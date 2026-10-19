@@ -29,6 +29,7 @@ export default function AdminNavbar() {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [emergencyCount, setEmergencyCount] = useState<number>(0);
+  const [hasUnread, setHasUnread] = useState<boolean>(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,13 +65,22 @@ export default function AdminNavbar() {
         // Hitung tiket darurat & pending
         const { data: tickets } = await supabase
           .from("b3_tickets")
-          .select("id, is_emergency, status")
-          .eq("status", "menunggu_verifikasi");
+          .select("id, is_emergency, status, created_at")
+          .eq("status", "menunggu_verifikasi")
+          .order("created_at", { ascending: false });
 
         if (tickets) {
           setPendingCount(tickets.length);
           const emerg = tickets.filter((t) => t.is_emergency).length;
           setEmergencyCount(emerg);
+
+          if (tickets.length > 0) {
+            const latestTicketTime = new Date(tickets[0].created_at).getTime() || 0;
+            const lastSeenTime = parseInt(localStorage.getItem("admin_last_seen_notif") || "0", 10);
+            setHasUnread(latestTicketTime > lastSeenTime);
+          } else {
+            setHasUnread(false);
+          }
         }
       } catch (err) {
         console.error("Gagal load data admin navbar:", err);
@@ -147,14 +157,23 @@ export default function AdminNavbar() {
             <button
               type="button"
               onClick={() => {
-                setShowNotifications((prev) => !prev);
+                setShowNotifications((prev) => {
+                  const nextState = !prev;
+                  if (nextState) {
+                    setHasUnread(false);
+                    try {
+                      localStorage.setItem("admin_last_seen_notif", Date.now().toString());
+                    } catch {}
+                  }
+                  return nextState;
+                });
                 setShowDropdown(false);
               }}
               className="relative p-2 rounded-xl border border-[#dce8df] hover:bg-[#f4f7f5] text-slate-600 transition cursor-pointer"
               title="Notifikasi Laporan"
             >
               <Bell className="w-4 h-4" />
-              {pendingCount > 0 && (
+              {hasUnread && pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                   {pendingCount}
                 </span>

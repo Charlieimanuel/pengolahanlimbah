@@ -5,8 +5,26 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
+// Rate limit sederhana per IP (maks. 20 foto per 60 detik)
+const uploadRateMap = new Map<string, { count: number; expiresAt: number }>();
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const now = Date.now();
+    const rate = uploadRateMap.get(ip);
+    if (rate && now < rate.expiresAt) {
+      if (rate.count >= 20) {
+        return NextResponse.json(
+          { success: false, error: "Terlalu banyak permintaan unggah. Silakan coba lagi dalam 1 menit." },
+          { status: 429 }
+        );
+      }
+      rate.count += 1;
+    } else {
+      uploadRateMap.set(ip, { count: 1, expiresAt: now + 60000 });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
@@ -22,10 +40,17 @@ export async function POST(request: NextRequest) {
     const ext = fileNameLower.split(".").pop() || "jpg";
     const cleanExt = ext.replace(/[^a-z0-9]/gi, "").toLowerCase() || "jpg";
 
-    // Validasi tipe file gambar fleksibel (kompatibel penuh dengan kamera HP / iOS / Android)
+    // Validasi tipe file gambar (khusus foto: JPG, PNG, WebP, HEIC, dsb — SVG dilarang untuk keamanan)
+    if (cleanExt === "svg" || mimeType.includes("svg")) {
+      return NextResponse.json(
+        { success: false, error: "Format SVG tidak diizinkan demi keamanan. Harap gunakan file foto (JPG, PNG, WebP, HEIC)." },
+        { status: 400 }
+      );
+    }
+
     const isImage =
-      mimeType.startsWith("image/") ||
-      ["jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif", "jfif", "svg"].includes(cleanExt);
+      (mimeType.startsWith("image/") && !mimeType.includes("svg")) ||
+      ["jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif", "jfif"].includes(cleanExt);
 
     if (!isImage) {
       return NextResponse.json(

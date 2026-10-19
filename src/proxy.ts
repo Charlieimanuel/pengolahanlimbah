@@ -53,19 +53,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Cek role user: cek profiles via sesi supabase terlebih dahulu, lalu adminClient dan user_metadata
+    // Cek role user dari database profiles atau metadata resmi
     let role = user.user_metadata?.role;
-    if (
-      user.email?.toLowerCase() === "admin@polimdo.ac.id" ||
-      user.email?.toLowerCase() === "charliemamarimbing11@gmail.com"
-    ) {
-      role = "verifikator_k3l";
-    }
-    if (
-      user.email?.toLowerCase().includes("admin_tps") ||
-      user.email?.toLowerCase().includes("admintps") ||
-      user.email?.toLowerCase().startsWith("tps@")
-    ) {
+    if (user.email?.toLowerCase() === "admin@polimdo.ac.id") {
       role = "admin_tps";
     }
 
