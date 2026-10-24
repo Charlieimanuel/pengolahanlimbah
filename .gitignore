@@ -44,3 +44,9 @@ next-env.d.ts
 public/uploads/*
 !public/uploads/.gitkeep
 backup_security_*
+backup_*
+*backup*/
+.agents/
+agent/
+agents/
+.github/prompts/

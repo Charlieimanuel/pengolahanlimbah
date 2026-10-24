@@ -29,6 +29,8 @@ interface UserProfile {
   nomor_wa: string | null;
   jurusan: string | null;
   nama_lab: string | null;
+  unit_id?: string | null;
+  units?: { nama_unit: string } | null;
   role: "unit_pelapor" | "verifikator_k3l" | "admin_tps" | "transporter";
   created_at: string;
   ticket_count?: number;
@@ -54,7 +56,7 @@ export default function AdminPenggunaPage() {
       // Ambil profiles
       const { data: userData, error: userError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, units:unit_id(nama_unit)")
         .order("created_at", { ascending: false });
 
       // Ambil tiket counts
@@ -337,11 +339,14 @@ export default function AdminPenggunaPage() {
                       )}
                     </td>
 
-                    {/* Jurusan */}
+                    {/* Jurusan & Prodi / Lab */}
                     <td className="py-3.5 px-3.5">
                       <div className="font-medium text-slate-900">{user.jurusan || "POLIMDO"}</div>
-                      {user.nama_lab && (
-                        <div className="text-[11px] text-slate-500">{user.nama_lab}</div>
+                      {user.units?.nama_unit && (
+                        <div className="text-[11px] font-semibold text-emerald-800">{user.units.nama_unit}</div>
+                      )}
+                      {user.nama_lab && user.nama_lab !== user.units?.nama_unit && (
+                        <div className="text-[10px] text-slate-500">{user.nama_lab}</div>
                       )}
                     </td>
 

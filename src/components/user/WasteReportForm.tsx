@@ -443,26 +443,17 @@ export default function WasteReportForm({
         </div>
       )}
 
-      {/* Form Title & Top Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-5 border-b border-[#e5ece6]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a36]"></span>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Formulir Pelaporan Temuan Limbah B3
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Laporkan keberadaan limbah berbahaya (B3) yang Anda temukan di lingkungan kampus agar segera ditangani tim K3L.
-          </p>
+      {/* Form Title */}
+      <div className="pb-4 sm:pb-5 border-b border-[#e5ece6]">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a36]"></span>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+            Formulir Pelaporan Temuan Limbah B3
+          </h2>
         </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eaf4ed] text-[#244b32] border border-[#cbe4d4] text-[11px] sm:text-xs font-semibold max-w-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
-            <span className="truncate">Siaga Tanggap Darurat K3L</span>
-          </span>
-        </div>
+        <p className="text-xs text-slate-500 mt-1">
+          Laporkan keberadaan limbah berbahaya (B3) yang Anda temukan di lingkungan kampus agar segera ditangani tim K3L.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-7">

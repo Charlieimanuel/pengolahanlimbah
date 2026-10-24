@@ -109,7 +109,7 @@ export default function PanduanSopPage() {
           </div>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Sesuai regulasi pemerintah, seluruh unit laboratorium diwajibkan menerapkan tata kelola ramah lingkungan:
+            Sesuai regulasi pemerintah, seluruh sivitas akademika dan unit kerja di Politeknik Negeri Manado diwajibkan menerapkan tata kelola ramah lingkungan:
           </p>
 
           <ul className="space-y-2.5 text-xs text-slate-700">
@@ -162,50 +162,54 @@ export default function PanduanSopPage() {
           </div>
 
           <div className="space-y-3 text-xs leading-relaxed">
-            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50/70 border border-[#e2eae4]">
-              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0">
+            {/* Langkah 1 */}
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-[#e2eae4] hover:bg-[#f9fbf9] transition">
+              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                 1
               </span>
-              <div>
-                <div className="font-bold text-slate-900">Registrasi Parameter Limbah</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Isi formulir keselamatan 12-parameter dan unggah foto kemasan di menu Laporan Baru.
+              <div className="space-y-0.5 flex-1">
+                <div className="font-bold text-slate-900">Pengajuan Laporan oleh Sivitas</div>
+                <div className="text-slate-600 text-[11px] leading-relaxed">
+                  Sivitas mengisi formulir di menu Buat Laporan (nama limbah, perkiraan volume, fase fisik, karakteristik bahaya, patokan lokasi penjemputan) dan melampirkan foto bukti kemasan.
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50/70 border border-[#e2eae4]">
-              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0">
+            {/* Langkah 2 */}
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-[#e2eae4] hover:bg-[#f9fbf9] transition">
+              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                 2
               </span>
-              <div>
-                <div className="font-bold text-slate-900">Verifikasi Dokumen Administrasi</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Tim pengurus K3L mereview kelayakan wadah dan label simbol piktogram (&lt;30 menit).
+              <div className="space-y-0.5 flex-1">
+                <div className="font-bold text-slate-900">Verifikasi Teknis oleh Petugas K3L</div>
+                <div className="text-slate-600 text-[11px] leading-relaxed">
+                  Verifikator UPT K3L memeriksa kesesuaian kemasan, menetapkan kode limbah resmi sesuai PP No. 22/2021, memvalidasi volume riil, dan memberikan catatan verifikasi serta jadwal evakuasi.
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50/70 border border-[#e2eae4]">
-              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0">
+            {/* Langkah 3 */}
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-[#e2eae4] hover:bg-[#f9fbf9] transition">
+              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                 3
               </span>
-              <div>
-                <div className="font-bold text-slate-900">Inspeksi Fisik & Penjemputan</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Petugas K3L melakukan penimbangan, pencatatan barcode tiket, dan evakuasi ke TPS.
+              <div className="space-y-0.5 flex-1">
+                <div className="font-bold text-slate-900">Evakuasi & Penyimpanan di TPS B3</div>
+                <div className="text-slate-600 text-[11px] leading-relaxed">
+                  Petugas K3L menjemput limbah ke lokasi unit dan menempatkannya pada rak khusus di TPS B3 Terpadu POLIMDO, dengan pencatatan logbook dan perhitungan tenggat masa simpan.
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50/70 border border-[#e2eae4]">
-              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0">
+            {/* Langkah 4 */}
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-[#e2eae4] hover:bg-[#f9fbf9] transition">
+              <span className="w-6 h-6 rounded-full bg-[#244b32] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                 4
               </span>
-              <div>
-                <div className="font-bold text-slate-900">Pembukuan Neraca Limbah Resmi</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Volume resmi tersinkronisasi otomatis dengan Festronik KLHK untuk pelaporan semester.
+              <div className="space-y-0.5 flex-1">
+                <div className="font-bold text-slate-900">Pengangkutan Pihak Ke-3 & Neraca</div>
+                <div className="text-slate-600 text-[11px] leading-relaxed">
+                  Limbah diserahterimakan kepada transporter berizin resmi KLHK dengan nomor Festronik/Manifest untuk pemusnahan akhir, serta otomatis tercatat pada neraca limbah resmi kampus.
                 </div>
               </div>
             </div>

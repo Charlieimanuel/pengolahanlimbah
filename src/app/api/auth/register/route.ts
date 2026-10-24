@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       birthDate,
       address,
       jurusan,
+      prodi,
       lab,
     } = body;
 
@@ -60,6 +61,16 @@ export async function POST(request: Request) {
       }
 
       // 2. Buat user langsung di auth.users dengan email terkonfirmasi (Tanpa limit email SMTP)
+      let matchedUnitId: string | null = null;
+      if (prodi) {
+        const { data: unitData } = await adminClient
+          .from("units")
+          .select("id")
+          .eq("nama_unit", prodi)
+          .maybeSingle();
+        if (unitData) matchedUnitId = unitData.id;
+      }
+
       const { data: newUserData, error: createError } =
         await adminClient.auth.admin.createUser({
           email: cleanEmail,
@@ -74,6 +85,7 @@ export async function POST(request: Request) {
             birth_date: birthDate || null,
             address: address || null,
             jurusan: jurusan || null,
+            prodi: prodi || null,
             lab: lab || null,
             role: "unit_pelapor",
           },
@@ -118,6 +130,7 @@ export async function POST(request: Request) {
           alamat: address || null,
           jurusan: jurusan || null,
           nama_lab: lab || null,
+          unit_id: matchedUnitId,
           role: "unit_pelapor",
         });
 
@@ -148,6 +161,7 @@ export async function POST(request: Request) {
           birth_date: birthDate,
           address,
           jurusan,
+          prodi,
           lab,
           role: "unit_pelapor",
         },
@@ -176,6 +190,16 @@ export async function POST(request: Request) {
     if (data.user?.id) {
       try {
         const adminClient = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
+        let fallbackUnitId: string | null = null;
+        if (prodi) {
+          const { data: unitData } = await adminClient
+            .from("units")
+            .select("id")
+            .eq("nama_unit", prodi)
+            .maybeSingle();
+          if (unitData) fallbackUnitId = unitData.id;
+        }
+
         await adminClient.from("profiles").upsert({
           id: data.user.id,
           email: cleanEmail,
@@ -188,6 +212,7 @@ export async function POST(request: Request) {
           alamat: address || null,
           jurusan: jurusan || null,
           nama_lab: lab || null,
+          unit_id: fallbackUnitId,
           role: "unit_pelapor",
         });
       } catch (upsertErr) {

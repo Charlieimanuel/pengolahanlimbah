@@ -259,7 +259,7 @@ export default function TicketDetailModal({
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin text-[#284533]" />
-            <span className="text-xs">Memuat detail dari database Supabase...</span>
+            <span className="text-xs">Memuat detail laporan...</span>
           </div>
         ) : !detail ? (
           <div className="py-12 px-4 text-center space-y-3">

@@ -53,3 +53,46 @@ export const WASTE_PACKAGING_TYPES = [
   "Plastik Tebal Double Seal",
   "Box Safety Khusus B3",
 ] as const;
+
+// ==============================================================================
+// 3. JURUSAN & PROGRAM STUDI POLIMDO
+// ==============================================================================
+
+export const PRODI_BY_JURUSAN: Record<string, string[]> = {
+  "Teknik Elektro": [
+    "D4 Teknik Informatika",
+    "D4 Teknik Listrik",
+    "D3 Teknik Listrik",
+    "D3 Teknik Komputer",
+  ],
+  "Teknik Mesin": [
+    "D4 Teknologi Rekayasa Mekatronika",
+    "D4 Teknik Mesin Produksi dan Perawatan",
+    "D3 Teknik Mesin",
+  ],
+  "Teknik Sipil": [
+    "D4 Konstruksi Bangunan Gedung",
+    "D4 Teknik Jalan Jembatan",
+    "D3 Teknik Sipil",
+    "D3 Rekayasa Perawatan & Restorasi Bangunan Gedung",
+  ],
+  "Akuntansi": [
+    "D4 Akuntansi Keuangan",
+    "D4 Akuntansi Perpajakan",
+    "D3 Akuntansi",
+  ],
+  "Administrasi Bisnis": [
+    "D4 Manajemen Bisnis",
+    "D3 Manajemen Pemasaran",
+    "D3 Administrasi Bisnis",
+  ],
+  "Pariwisata": [
+    "D4 Manajemen Perhotelan",
+    "D4 Global Tourism Management",
+    "D3 Pariwisata",
+    "D3 Underwater Ecotourism",
+    "D3 Usaha Perjalanan Wisata",
+  ],
+};
+
+export const LIST_JURUSAN = Object.keys(PRODI_BY_JURUSAN);

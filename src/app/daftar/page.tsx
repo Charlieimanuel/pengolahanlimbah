@@ -20,6 +20,43 @@ import {
 type RoleOption = "Pegawai Kampus" | "Mahasiswa";
 type GenderOption = "Laki-laki" | "Perempuan";
 
+const PRODI_BY_JURUSAN: Record<string, string[]> = {
+  "Teknik Elektro": [
+    "D4 Teknik Informatika",
+    "D4 Teknik Listrik",
+    "D3 Teknik Listrik",
+    "D3 Teknik Komputer",
+  ],
+  "Teknik Mesin": [
+    "D4 Teknologi Rekayasa Mekatronika",
+    "D4 Teknik Mesin Produksi dan Perawatan",
+    "D3 Teknik Mesin",
+  ],
+  "Teknik Sipil": [
+    "D4 Konstruksi Bangunan Gedung",
+    "D4 Teknik Jalan Jembatan",
+    "D3 Teknik Sipil",
+    "D3 Rekayasa Perawatan & Restorasi Bangunan Gedung",
+  ],
+  "Akuntansi": [
+    "D4 Akuntansi Keuangan",
+    "D4 Akuntansi Perpajakan",
+    "D3 Akuntansi",
+  ],
+  "Administrasi Bisnis": [
+    "D4 Manajemen Bisnis",
+    "D3 Manajemen Pemasaran",
+    "D3 Administrasi Bisnis",
+  ],
+  "Pariwisata": [
+    "D4 Manajemen Perhotelan",
+    "D4 Global Tourism Management",
+    "D3 Pariwisata",
+    "D3 Underwater Ecotourism",
+    "D3 Usaha Perjalanan Wisata",
+  ],
+};
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -33,7 +70,7 @@ export default function RegisterPage() {
   const [birthDate, setBirthDate] = useState("");
   const [address, setAddress] = useState("");
   const [jurusan, setJurusan] = useState("");
-  const [lab, setLab] = useState("");
+  const [prodi, setProdi] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -82,6 +119,14 @@ export default function RegisterPage() {
       setErrorMessage("Harap menyetujui pernyataan kepatuhan SOP Pengelolaan Limbah B3 POLIMDO.");
       return;
     }
+    if (!jurusan) {
+      setErrorMessage("Harap memilih jurusan terlebih dahulu.");
+      return;
+    }
+    if (!prodi) {
+      setErrorMessage("Harap memilih program studi terlebih dahulu.");
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMessage("Kata sandi dan konfirmasi kata sandi tidak cocok!");
       return;
@@ -108,7 +153,8 @@ export default function RegisterPage() {
           birthDate,
           address,
           jurusan,
-          lab: role === "Mahasiswa" && !lab ? "Umum / Praktikum Terjadwal" : lab,
+          prodi,
+          lab: null,
         }),
       });
 
@@ -462,79 +508,77 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Component 7: Row Tempat Lahir & Jurusan */}
+                {/* Component 7: Row Tempat Lahir */}
                 <div
                   style={{ "--d": "155ms", "--d-exit": "40ms" } as React.CSSProperties}
+                  className={isLeaving ? "comp-fluid-out" : "comp-fluid-in"}
+                >
+                  <label className="block text-[10px] font-semibold text-slate-600 mb-1">
+                    Tempat Lahir <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={birthPlace}
+                    onChange={(e) => setBirthPlace(e.target.value)}
+                    placeholder="Kota lahir"
+                    className="w-full bg-[#edf3f0] hover:bg-[#e7efe9] focus:bg-white text-slate-900 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-600 focus:outline-none transition placeholder-slate-400 font-medium"
+                  />
+                </div>
+
+                {/* Component 8: Row Jurusan & Program Studi (Prodi) */}
+                <div
+                  style={{ "--d": "175ms", "--d-exit": "45ms" } as React.CSSProperties}
                   className={`grid grid-cols-1 sm:grid-cols-2 gap-2.5 ${isLeaving ? "comp-fluid-out" : "comp-fluid-in"
                     }`}
                 >
                   <div>
                     <label className="block text-[10px] font-semibold text-slate-600 mb-1">
-                      Tempat Lahir <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={birthPlace}
-                      onChange={(e) => setBirthPlace(e.target.value)}
-                      placeholder="Kota lahir"
-                      className="w-full bg-[#edf3f0] hover:bg-[#e7efe9] focus:bg-white text-slate-900 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-600 focus:outline-none transition placeholder-slate-400 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-1">
-                      Jurusan / Unit <span className="text-red-500">*</span>
+                      Jurusan <span className="text-red-500">*</span>
                     </label>
                     <select
                       required
                       value={jurusan}
-                      onChange={(e) => setJurusan(e.target.value)}
+                      onChange={(e) => {
+                        setJurusan(e.target.value);
+                        setProdi("");
+                      }}
                       className="w-full bg-[#edf3f0] hover:bg-[#e7efe9] focus:bg-white text-slate-900 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-600 focus:outline-none transition appearance-none cursor-pointer font-medium"
                     >
                       <option value="">Pilih jurusan</option>
-                      <option value="Teknik Sipil">Teknik Sipil</option>
-                      <option value="Teknik Mesin">Teknik Mesin</option>
                       <option value="Teknik Elektro">Teknik Elektro</option>
-                      <option value="Teknik Informatika">Teknik Informatika & Komputer</option>
+                      <option value="Teknik Mesin">Teknik Mesin</option>
+                      <option value="Teknik Sipil">Teknik Sipil</option>
                       <option value="Akuntansi">Akuntansi</option>
                       <option value="Administrasi Bisnis">Administrasi Bisnis</option>
                       <option value="Pariwisata">Pariwisata</option>
-                      <option value="UPT K3L">Unit Pelaksana Teknis K3L</option>
                     </select>
                   </div>
-                </div>
 
-                {/* Component 8: Row Ruang Lab / Bengkel */}
-                <div
-                  style={{ "--d": "175ms", "--d-exit": "45ms" } as React.CSSProperties}
-                  className={isLeaving ? "comp-fluid-out" : "comp-fluid-in"}
-                >
-                  <label className="block text-[10px] font-semibold text-slate-600 mb-1">
-                    Ruang Lab / Bengkel{" "}
-                    {role === "Mahasiswa" ? (
-                      <span className="text-emerald-700 font-normal">(Opsional)</span>
-                    ) : (
-                      <span className="text-red-500">*</span>
-                    )}
-                  </label>
-                  <select
-                    required={role !== "Mahasiswa"}
-                    value={lab}
-                    onChange={(e) => setLab(e.target.value)}
-                    className="w-full bg-[#edf3f0] hover:bg-[#e7efe9] focus:bg-white text-slate-900 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-600 focus:outline-none transition appearance-none cursor-pointer font-medium"
-                  >
-                    <option value="">{role === "Mahasiswa" ? "Umum / Praktikum Terjadwal" : "Pilih lab"}</option>
-                    <option value="Lab Kimia Terapan">Lab Kimia Terapan & Uji Bahan</option>
-                    <option value="Lab Teknik Kimia">Lab Teknik Kimia Terpadu</option>
-                    <option value="Lab Mesin Otomotif">Lab Mesin & Otomotif</option>
-                    <option value="Bengkel Fabrikasi">Bengkel Fabrikasi & Pengelasan</option>
-                    <option value="Lab Teknik Elektro">Lab Teknik Elektro</option>
-                    <option value="Lab Uji Tanah">Lab Uji Tanah & Material Sipil</option>
-                    <option value="Lab Lingkungan Air">Lab Lingkungan & Kualitas Air</option>
-                    <option value="TPS B3 Terpadu">TPS B3 Gedung Terpadu</option>
-                    <option value="Lainnya">Lainnya</option>
-                  </select>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 mb-1">
+                      Program Studi (Prodi) <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={prodi}
+                      disabled={!jurusan}
+                      onChange={(e) => setProdi(e.target.value)}
+                      className={`w-full bg-[#edf3f0] hover:bg-[#e7efe9] focus:bg-white text-slate-900 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-600 focus:outline-none transition appearance-none cursor-pointer font-medium ${
+                        !jurusan ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <option value="">
+                        {jurusan ? "Pilih program studi" : "Pilih jurusan terlebih dahulu"}
+                      </option>
+                      {jurusan &&
+                        PRODI_BY_JURUSAN[jurusan]?.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Component 9: Row Alamat Lengkap */}

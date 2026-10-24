@@ -46,8 +46,8 @@ export default function MetricCards({
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-[#e5ece6] flex items-center justify-between text-[11px] text-slate-500">
-          <span>Sinkronisasi database Supabase</span>
-          <span className="font-semibold text-emerald-700">Real-time</span>
+          <span>Pembaruan Data</span>
+          <span className="font-semibold text-emerald-700">Otomatis</span>
         </div>
       </div>
 
@@ -65,12 +65,8 @@ export default function MetricCards({
           <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
             {displayPending} Laporan
           </div>
-          <div className="mt-1 space-y-0.5">
-            <span className="bg-amber-50 text-amber-800 border border-amber-200/80 text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-              <Clock className="w-3 h-3 text-amber-600" />
-              Antrean Tindak Lanjut Tim K3L
-            </span>
-            <div className="text-xs text-slate-500">Menunggu evakuasi & pengamanan lokasi</div>
+          <div className="text-xs text-slate-600 font-medium mt-1 truncate">
+            Menunggu evakuasi & pengamanan lokasi
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-[#e5ece6] text-[11px] text-slate-500">

@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   RefreshCw,
   PlusCircle,
+  Check,
 } from "lucide-react";
 
 export interface TicketItem {
@@ -50,12 +51,30 @@ export default function TicketHistoryTable({
 }: TicketHistoryTableProps) {
   const [selectedTab, setSelectedTab] = useState("Semua Status");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [dbTickets, setDbTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<{
     nama_lengkap: string;
     nip_nim: string | null;
   } | null>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setFilterDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const onStatsLoadedRef = useRef(onStatsLoaded);
   useEffect(() => {
@@ -340,38 +359,92 @@ export default function TicketHistoryTable({
             <RefreshCw className={`w-4 h-4 text-[#284533] ${loading ? "animate-spin" : ""}`} />
           </button>
 
-          <button
-            type="button"
-            className="p-2 border border-[#dce8df] rounded-xl hover:bg-[#f4f8f5] text-slate-600 transition cursor-pointer shrink-0"
-            title="Filter Lanjutan"
-          >
-            <SlidersHorizontal className="w-4 h-4 text-[#284533]" />
-          </button>
-        </div>
-      </div>
+          {/* Dropdown Filter Status */}
+          <div className="relative" ref={filterDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setFilterDropdownOpen((prev) => !prev)}
+              className={`p-2 border rounded-xl transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                selectedTab !== "Semua Status"
+                  ? "bg-[#284533] text-white border-[#284533] shadow-xs"
+                  : "bg-white border-[#dce8df] text-[#284533] hover:bg-[#f4f8f5]"
+              }`}
+              title="Filter Status Laporan"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              {selectedTab !== "Semua Status" && (
+                <span className="text-[11px] font-bold max-w-[130px] truncate hidden sm:inline">
+                  {selectedTab}
+                </span>
+              )}
+            </button>
 
-      {/* Filter Tabs — Dinamis dari Database */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2.5 pt-0.5 border-b border-[#e5ece6] scrollbar-none sm:flex-wrap">
-        {[
-          { name: "Semua Status", count: tabCounts.all },
-          { name: "Menunggu Verifikasi", count: tabCounts.pending },
-          { name: "Masuk TPS POLIMDO", count: tabCounts.tps },
-          { name: "Diangkut Pihak-3", count: tabCounts.dispatched },
-          { name: "Ditolak K3L", count: tabCounts.rejected },
-          { name: "Draft Tersimpan", count: tabCounts.draft },
-        ].map((tab) => (
-          <button
-            key={tab.name}
-            onClick={() => setSelectedTab(tab.name)}
-            className={`whitespace-nowrap shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer active:scale-95 ${
-              selectedTab === tab.name
-                ? "bg-[#284533] text-white shadow-xs"
-                : "bg-[#f2f6f3] text-slate-600 hover:bg-[#e4ede7] hover:text-slate-900"
-            }`}
-          >
-            {tab.name} ({tab.count})
-          </button>
-        ))}
+            {filterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-60 bg-white border border-[#dce8df] rounded-2xl shadow-xl z-30 py-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
+                  <span>Filter Status Laporan</span>
+                  {selectedTab !== "Semua Status" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTab("Semua Status");
+                        setFilterDropdownOpen(false);
+                      }}
+                      className="text-emerald-700 hover:underline capitalize text-[10px] font-bold cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-0.5 px-1.5">
+                  {[
+                    { name: "Semua Status", count: tabCounts.all },
+                    { name: "Menunggu Verifikasi", count: tabCounts.pending },
+                    { name: "Masuk TPS POLIMDO", count: tabCounts.tps },
+                    { name: "Diangkut Pihak-3", count: tabCounts.dispatched },
+                    { name: "Ditolak K3L", count: tabCounts.rejected },
+                    { name: "Draft Tersimpan", count: tabCounts.draft },
+                  ].map((opt) => {
+                    const isSelected = selectedTab === opt.name;
+                    return (
+                      <button
+                        key={opt.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTab(opt.name);
+                          setFilterDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition cursor-pointer text-left ${
+                          isSelected
+                            ? "bg-[#eaf4ed] text-[#244b32] font-bold"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          {isSelected ? (
+                            <Check className="w-3.5 h-3.5 text-[#244b32] shrink-0" />
+                          ) : (
+                            <span className="w-3.5 h-3.5 shrink-0" />
+                          )}
+                          <span className="truncate">{opt.name}</span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full shrink-0 font-bold ${
+                            isSelected
+                              ? "bg-[#244b32] text-white"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {opt.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Loading Indicator — hanya tampil saat inisialisasi awal (jika data belum ada) */}
@@ -599,11 +672,6 @@ export default function TicketHistoryTable({
         <div>
           Menampilkan <span className="font-bold text-slate-800">{filteredTickets.length}</span> dari{" "}
           <span className="font-bold text-slate-800">{allTickets.length}</span> laporan temuan limbah di database
-        </div>
-
-        <div className="text-[11px] text-emerald-800 font-medium flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Tersinkronisasi dengan Database Supabase</span>
         </div>
       </div>
     </section>

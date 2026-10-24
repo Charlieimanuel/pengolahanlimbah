@@ -235,23 +235,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {ADMIN_MENU.map((item) => renderNavItem(item))}
         </nav>
 
-        {/* Bottom Actions: Logout */}
-        <div className="flex flex-col items-center gap-2 w-full px-2 pt-3 border-t border-white/10">
-
+        {/* Bottom Exit / Logout button */}
+        <div className="w-full">
           <button
             type="button"
             onClick={() => setShowLogoutModal(true)}
-            title="Keluar"
-            className="flex items-center h-10 px-3.5 w-full rounded-xl hover:bg-red-500/20 text-white/70 hover:text-red-200 transition group cursor-pointer"
+            title="Keluar dari Akun"
+            className="flex items-center h-11 text-white/60 hover:text-rose-300 transition-all duration-300 group cursor-pointer px-3.5 w-full"
           >
-            <LogOut className="w-4 h-4 shrink-0 text-red-300 group-hover:scale-110 transition" />
-            <span
-              className={`text-xs ml-3 truncate transition-all duration-300 ${
-                sidebarOpen ? "opacity-100" : "opacity-0 max-w-0 pointer-events-none"
+            <LogOut className="w-5 h-5 shrink-0 stroke-[1.8] group-hover:scale-110 transition-transform" />
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out whitespace-nowrap ${
+                sidebarOpen
+                  ? "max-w-[170px] opacity-100 translate-x-0 ml-3.5"
+                  : "max-w-0 opacity-0 -translate-x-2 ml-0 pointer-events-none"
               }`}
             >
-              Keluar
-            </span>
+              <span className="text-xs font-semibold text-rose-300 block truncate">
+                Keluar
+              </span>
+            </div>
           </button>
         </div>
       </aside>
@@ -319,15 +322,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               })}
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex items-center justify-end">
+            <div className="pt-2.5 border-t border-white/10">
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setShowLogoutModal(true);
                 }}
-                className="text-xs text-red-300 font-semibold"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs text-red-200 font-semibold transition cursor-pointer"
               >
-                Logout
+                <LogOut className="w-4 h-4 text-red-300" />
+                <span>Logout dari Akun</span>
               </button>
             </div>
           </div>
@@ -346,24 +351,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      {/* Logout Modal Confirmation */}
+      {/* =========================================================
+          LOGOUT CONFIRMATION MODAL - Eco-Living Nature Theme
+      ========================================================= */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 border border-[#e2eae4] shadow-2xl">
-            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-              <LogOut className="w-6 h-6" />
+        <div
+          className="fixed inset-0 z-50 bg-[#16271c]/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => !loggingOut && setShowLogoutModal(false)}
+        >
+          <div
+            className="relative overflow-hidden bg-[#F8FAF4] border border-[#E5EBDD] rounded-3xl max-w-sm w-full p-6 text-center shadow-[0_25px_60px_-15px_rgba(40,69,51,0.35)] space-y-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Subtle organic leaf silhouette watermark */}
+            <div className="absolute -top-10 -right-10 pointer-events-none opacity-[0.07] text-[#3A6335]">
+              <svg width="140" height="140" viewBox="0 0 100 100" fill="currentColor">
+                <path d="M50 0 C70 30 90 40 100 70 C70 70 50 90 20 100 C20 70 30 50 50 0 Z" />
+              </svg>
             </div>
-            <div>
-              <h4 className="text-base font-bold text-slate-900">Keluar dari Akun Admin?</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                Anda perlu login kembali untuk mengakses panel pengawasan K3L kampus POLIMDO.
+
+            {/* Icon Box: Terracotta & Wood Tone with Sage accents */}
+            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-[#F2EAE1] border border-[#E0D0C1] p-1 flex items-center justify-center shadow-xs">
+              <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#A64B3E] to-[#915F38] text-white flex items-center justify-center shadow-md shadow-[#915F38]/25">
+                <LogOut className="w-6 h-6 stroke-[2.2]" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 relative z-10">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EAF2E5] text-[#3A6335] text-[10px] font-bold border border-[#A9C39B]/70 tracking-wider">
+                KONFIRMASI SESI
+              </span>
+              <h3 className="text-lg font-bold text-[#1E3526] tracking-tight">
+                Konfirmasi Keluar Akun
+              </h3>
+              <p className="text-xs text-[#526656] leading-relaxed">
+                Apakah Anda yakin ingin keluar? Pastikan data verifikasi dan pencatatan TPS sudah tersimpan dengan aman.
               </p>
             </div>
-            <div className="flex items-center gap-3 pt-2">
+
+            <div className="grid grid-cols-2 gap-2.5 pt-1 relative z-10">
               <button
                 type="button"
+                disabled={loggingOut}
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                className="bg-white hover:bg-[#EAF2E5] text-[#3A6335] border border-[#D2E2CB] font-bold text-xs py-3 rounded-xl transition duration-200 cursor-pointer shadow-xs active:scale-95"
               >
                 Batal
               </button>
@@ -371,9 +402,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 type="button"
                 disabled={loggingOut}
                 onClick={handleLogout}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+                className="bg-[#A64B3E] hover:bg-[#8F3E32] text-white font-bold text-xs py-3 rounded-xl transition duration-200 cursor-pointer shadow-md shadow-[#A64B3E]/25 disabled:opacity-70 active:scale-95 flex items-center justify-center gap-1.5"
               >
-                {loggingOut ? "Keluar..." : "Ya, Keluar"}
+                {loggingOut ? (
+                  <span>Mengeluarkan...</span>
+                ) : (
+                  <span>Ya, Keluar</span>
+                )}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import TicketInspectionModal from "@/components/admin/TicketInspectionModal";
 import {
@@ -22,6 +22,9 @@ import {
   ChevronRight,
   Sparkles,
   Check,
+  SlidersHorizontal,
+  ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 
 interface AdminTicketItem {
@@ -55,6 +58,23 @@ export default function AdminVerifikasiTiketPage() {
   const [activeTab, setActiveTab] = useState<TabFilter>("menunggu_verifikasi");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("all");
+
+  // State Dropdown Filter Status
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Outside click listener untuk menutup dropdown filter
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // State Modal Inspeksi
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -102,7 +122,7 @@ export default function AdminVerifikasiTiketPage() {
     };
   }, [fetchTickets]);
 
-  // Hitung jumlah untuk tab
+  // Hitung jumlah untuk tab & filter
   const counts = useMemo(() => {
     return {
       semua: tickets.length,
@@ -112,6 +132,54 @@ export default function AdminVerifikasiTiketPage() {
       ditolak: tickets.filter((t) => t.status === "ditolak").length,
     };
   }, [tickets]);
+
+  // Konfigurasi opsi filter status
+  const statusFilterOptions = useMemo(
+    () => [
+      {
+        id: "menunggu_verifikasi" as TabFilter,
+        label: "Menunggu Inspeksi",
+        count: counts.menunggu,
+        dotColor: "bg-amber-500",
+        badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+      },
+      {
+        id: "darurat" as TabFilter,
+        label: "🚨 Kedaruratan Tinggi",
+        count: counts.darurat,
+        dotColor: "bg-red-500",
+        badgeColor: "bg-red-50 text-red-700 border-red-200",
+        isEmergency: true,
+      },
+      {
+        id: "masuk_tps" as TabFilter,
+        label: "Masuk TPS POLIMDO",
+        count: counts.masuk_tps,
+        dotColor: "bg-emerald-600",
+        badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      },
+      {
+        id: "ditolak" as TabFilter,
+        label: "Ditolak / Invalid",
+        count: counts.ditolak,
+        dotColor: "bg-rose-500",
+        badgeColor: "bg-rose-50 text-rose-800 border-rose-200",
+      },
+      {
+        id: "semua" as TabFilter,
+        label: "Semua Riwayat Tiket",
+        count: counts.semua,
+        dotColor: "bg-slate-400",
+        badgeColor: "bg-slate-100 text-slate-700 border-slate-200",
+      },
+    ],
+    [counts]
+  );
+
+  const activeFilterOption = useMemo(
+    () => statusFilterOptions.find((opt) => opt.id === activeTab) || statusFilterOptions[0],
+    [statusFilterOptions, activeTab]
+  );
 
   // Unique list lokasi untuk filter
   const uniqueLocations = useMemo(() => {
@@ -382,59 +450,9 @@ export default function AdminVerifikasiTiketPage() {
       {/* =========================================================
           MAIN WORKBENCH CONTAINER — White Card with Clean Design
       ========================================================= */}
-      <div className="bg-white border border-[#e2eae4] rounded-2xl shadow-xs overflow-hidden">
-        {/* Navigation Tabs Filter */}
-        <div className="flex items-center overflow-x-auto border-b border-[#e5ece6] bg-[#f8faf8] px-4 pt-2.5 gap-2 scrollbar-none">
-          {[
-            {
-              id: "menunggu_verifikasi",
-              label: "Menunggu Inspeksi",
-              count: counts.menunggu,
-              highlight: counts.menunggu > 0,
-            },
-            {
-              id: "darurat",
-              label: "🚨 Kedaruratan Tinggi",
-              count: counts.darurat,
-              highlight: counts.darurat > 0,
-              red: true,
-            },
-            { id: "masuk_tps", label: "Masuk TPS", count: counts.masuk_tps },
-            { id: "ditolak", label: "Ditolak", count: counts.ditolak },
-            { id: "semua", label: "Semua Riwayat", count: counts.semua },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabFilter)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all cursor-pointer ${
-                  isActive
-                    ? tab.red
-                      ? "border-red-600 text-red-700 bg-white font-bold"
-                      : "border-[#284533] text-[#284533] bg-white font-bold"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isActive
-                      ? tab.red
-                        ? "bg-red-600 text-white"
-                        : "bg-[#284533] text-white"
-                      : "bg-[#edf3ef] text-slate-600"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
+      <div className="bg-white border border-[#e2eae4] rounded-2xl shadow-xs">
         {/* Filter Controls & Search */}
-        <div className="p-4 border-b border-[#e5ece6] bg-white flex flex-col md:flex-row gap-3 md:items-center justify-between">
+        <div className="p-4 border-b border-[#e5ece6] bg-white flex flex-col md:flex-row gap-3 md:items-center justify-between rounded-t-2xl">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -446,15 +464,132 @@ export default function AdminVerifikasiTiketPage() {
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 Reset
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            {/* Status Filter Dropdown Button */}
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                  activeTab === "darurat"
+                    ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                    : activeTab !== "menunggu_verifikasi"
+                    ? "bg-[#eaf4ed] border-[#b8d7c0] text-[#1e3b29] hover:bg-[#deede2]"
+                    : "bg-[#f8faf8] border-[#dce8df] text-slate-800 hover:bg-[#edf3ef]"
+                }`}
+                aria-haspopup="true"
+                aria-expanded={isFilterDropdownOpen}
+              >
+                <SlidersHorizontal
+                  className={`w-3.5 h-3.5 ${
+                    activeTab === "darurat" ? "text-red-600" : "text-[#284533]"
+                  }`}
+                />
+                <span className="text-slate-500 font-normal">Filter:</span>
+                <span className="font-bold">{activeFilterOption.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                    activeTab === "darurat"
+                      ? "bg-red-600 text-white"
+                      : "bg-[#284533] text-white"
+                  }`}
+                >
+                  {activeFilterOption.count}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                    isFilterDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown Menu Popup */}
+              {isFilterDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#dce8df] p-2 z-40 animate-in fade-in-50 zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-[#edf3ef] mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Filter Status Tiket
+                    </span>
+                    {activeTab !== "menunggu_verifikasi" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab("menunggu_verifikasi");
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className="text-[11px] font-semibold text-[#284533] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset Default</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    {statusFilterOptions.map((opt) => {
+                      const isSelected = activeTab === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(opt.id);
+                            setIsFilterDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition cursor-pointer text-left ${
+                            isSelected
+                              ? opt.id === "darurat"
+                                ? "bg-red-50 text-red-900 font-bold border border-red-200"
+                                : "bg-[#eaf4ed] text-[#1e3b29] font-bold border border-[#c0dcc7]"
+                              : "hover:bg-[#f8faf8] text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className={`w-2 h-2 rounded-full ${opt.dotColor} ${
+                                opt.id === "darurat" && opt.count > 0 ? "animate-pulse" : ""
+                              }`}
+                            />
+                            <span>{opt.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                                isSelected
+                                  ? opt.id === "darurat"
+                                    ? "bg-red-600 text-white"
+                                    : "bg-[#284533] text-white"
+                                  : opt.badgeColor
+                              }`}
+                            >
+                              {opt.count}
+                            </span>
+                            {isSelected && (
+                              <Check
+                                className={`w-3.5 h-3.5 shrink-0 ${
+                                  opt.id === "darurat" ? "text-red-700" : "text-[#284533]"
+                                }`}
+                              />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Lokasi Filter */}
             <div className="flex items-center gap-2 bg-[#f8faf8] border border-[#dce8df] rounded-xl px-3 py-2 text-xs">
               <Filter className="w-3.5 h-3.5 text-[#284533]" />
               <select
@@ -471,7 +606,7 @@ export default function AdminVerifikasiTiketPage() {
               </select>
             </div>
 
-            <div className="text-xs text-slate-500 font-mono hidden sm:block">
+            <div className="text-xs text-slate-500 font-mono hidden sm:block whitespace-nowrap">
               Total: <span className="font-bold text-slate-900">{filteredTickets.length}</span> Tiket
             </div>
           </div>
